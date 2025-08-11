@@ -396,8 +396,35 @@ function renderComments(comments) {
 
 function setupCommentForm(postId, useFirestore) {
     console.log('Setting up comment form for post:', postId, 'useFirestore:', useFirestore);
-    const commentForm = document.getElementById('commentForm');
-    console.log('Comment form found:', !!commentForm);
+    
+    // Try multiple ways to find the form
+    let commentForm = document.getElementById('commentForm');
+    console.log('Comment form found by ID:', !!commentForm);
+    
+    if (!commentForm) {
+        // Try finding by tag name
+        const forms = document.querySelectorAll('form');
+        console.log('Total forms found:', forms.length);
+        forms.forEach((form, index) => {
+            console.log(`Form ${index}:`, form.id, form.className, form.innerHTML.substring(0, 100));
+        });
+        
+        // Try finding by textarea
+        const textareas = document.querySelectorAll('textarea');
+        console.log('Total textareas found:', textareas.length);
+        textareas.forEach((textarea, index) => {
+            console.log(`Textarea ${index}:`, textarea.id, textarea.placeholder);
+        });
+        
+        // Try finding the form by looking for the textarea's parent form
+        const commentTextarea = document.getElementById('commentContent');
+        if (commentTextarea && commentTextarea.closest('form')) {
+            commentForm = commentTextarea.closest('form');
+            console.log('Found form via textarea parent:', commentForm);
+        }
+    }
+    
+    console.log('Final comment form found:', !!commentForm);
     if (!commentForm) {
         console.error('Comment form not found!');
         return;
