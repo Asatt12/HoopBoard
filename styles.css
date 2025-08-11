@@ -1232,7 +1232,8 @@ footer.show {
     }
     
     .social-links {
-        gap: 15px;
+        justify-content: center;
+        margin-top: 10px;
     }
 }
 
