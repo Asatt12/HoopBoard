@@ -1,11 +1,18 @@
 // HoopBoard - A community for athletes, by athletes
 
+// Simple test to verify script is loading
+console.log('🚀 HoopBoard script loaded!');
+console.log('Firebase available:', typeof window !== 'undefined' && !!window.db);
+console.log('Firestore functions available:', typeof window !== 'undefined' && !!window.firestoreFns);
+
 // In-memory posts cache for rendering
 let posts = JSON.parse(localStorage.getItem('hoopboard_posts')) || [];
 
 // Firestore detection helpers
 function isFirestoreAvailable() {
-    return typeof window !== 'undefined' && !!window.db && !!window.firestoreFns;
+    const available = typeof window !== 'undefined' && !!window.db && !!window.firestoreFns;
+    console.log('isFirestoreAvailable check:', available);
+    return available;
 }
 
 function getFs() {
