@@ -345,6 +345,100 @@ main {
 .feature-icon {
     font-size: 48px;
     margin-bottom: 20px;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover .feature-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+/* Shield Icon for Anonymous */
+.icon-shield::before {
+    content: '';
+    width: 40px;
+    height: 48px;
+    background: currentColor;
+    clip-path: polygon(50% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%, 0% 0%);
+    position: relative;
+}
+
+.icon-shield::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 32px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    clip-path: polygon(50% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%, 0% 0%);
+}
+
+/* Basketball Icon */
+.icon-basketball::before {
+    content: '';
+    width: 40px;
+    height: 40px;
+    background: currentColor;
+    border-radius: 50%;
+    position: relative;
+}
+
+.icon-basketball::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    border: 2px solid white;
+}
+
+/* Heart Icon for Support */
+.icon-heart::before {
+    content: '';
+    width: 40px;
+    height: 36px;
+    background: currentColor;
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    position: relative;
+}
+
+/* Globe Icon for Community */
+.icon-globe::before {
+    content: '';
+    width: 40px;
+    height: 40px;
+    background: currentColor;
+    border-radius: 50%;
+    position: relative;
+}
+
+.icon-globe::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    border: 2px solid white;
 }
 
 .feature-card h3 {
