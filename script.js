@@ -1,7 +1,16 @@
 // HoopBoard - A community for athletes, by athletes
 
-// Store posts in localStorage for now (will be replaced with Airtable later)
+// In-memory posts cache for rendering
 let posts = JSON.parse(localStorage.getItem('hoopboard_posts')) || [];
+
+// Firestore detection helpers
+function isFirestoreAvailable() {
+    return typeof window !== 'undefined' && !!window.db && !!window.firestoreFns;
+}
+
+function getFs() {
+    return window.firestoreFns;
+}
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
@@ -16,12 +25,9 @@ function setupFooterScroll() {
     window.addEventListener('scroll', function() {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
-        // Show footer when scrolling down, hide when scrolling up
         if (scrollTop > lastScrollTop && scrollTop > 100) {
-            // Scrolling down and past 100px
             footer.classList.add('show');
         } else if (scrollTop < lastScrollTop || scrollTop <= 100) {
-            // Scrolling up or near top
             footer.classList.remove('show');
         }
         
@@ -30,25 +36,21 @@ function setupFooterScroll() {
 }
 
 function initializeApp() {
-    // Set up form handling if we're on the post page
     const postForm = document.getElementById('postForm');
     if (postForm) {
         setupPostForm();
     }
 
-    // Set up feed if we're on the locker room page
     const feed = document.getElementById('feed');
     if (feed) {
         setupFeed();
     }
 
-    // Set up individual post view if we're on a post view page
     const postView = document.getElementById('postView');
     if (postView) {
         setupPostView();
     }
 
-    // Set up like buttons
     setupLikeButtons();
 }
 
@@ -56,16 +58,14 @@ function setupPostForm() {
     const form = document.getElementById('postForm');
     const submitBtn = form.querySelector('.submit-btn');
     
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        // Get form data
         const content = document.getElementById('postContent').value.trim();
         const position = document.getElementById('position').value;
         const region = document.getElementById('region').value;
         const division = document.getElementById('division').value;
         
-        // Validate form
         if (!content || !position || !region || !division) {
             showMessage('Please fill out all fields.', 'error');
             return;
@@ -76,51 +76,81 @@ function setupPostForm() {
             return;
         }
         
-        // Disable submit button and show loading state
         submitBtn.disabled = true;
         submitBtn.textContent = 'Posting...';
         
-        // Create new post
-        const newPost = {
-            id: Date.now(),
-            content: content,
-            position: position,
-            region: region,
-            division: division,
-            timestamp: new Date().toISOString(),
-            likes: 0,
-            liked: false,
-            comments: []
-        };
-        
-        // Add to posts array
-        posts.unshift(newPost);
-        
-        // Save to localStorage
-        localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
-        
-        // Show success message
-        showMessage('Post submitted successfully!', 'success');
-        
-        // Reset form
-        form.reset();
-        
-        // Re-enable submit button
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Share Your Story';
-        
-        // Redirect to the new post after a short delay
-        setTimeout(() => {
-            window.location.href = `view-post.html?id=${newPost.id}`;
-        }, 1500);
+        try {
+            if (isFirestoreAvailable()) {
+                const { collection, addDoc, serverTimestamp } = getFs();
+                const postsCol = collection(window.db, 'posts');
+                const docRef = await addDoc(postsCol, {
+                    content,
+                    position,
+                    region,
+                    division,
+                    timestamp: serverTimestamp(),
+                    likes: 0,
+                    commentCount: 0
+                });
+                showMessage('Post submitted successfully!', 'success');
+                form.reset();
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Share Your Story';
+                setTimeout(() => {
+                    window.location.href = `view-post.html?id=${docRef.id}`;
+                }, 1200);
+                return;
+            }
+            
+            const newPost = {
+                id: Date.now(),
+                content,
+                position,
+                region,
+                division,
+                timestamp: new Date().toISOString(),
+                likes: 0,
+                liked: false,
+                comments: []
+            };
+            posts.unshift(newPost);
+            localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
+            showMessage('Post submitted successfully!', 'success');
+            form.reset();
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Share Your Story';
+            setTimeout(() => {
+                window.location.href = `view-post.html?id=${newPost.id}`;
+            }, 1200);
+        } catch (err) {
+            console.error(err);
+            showMessage('Something went wrong posting. Please try again.', 'error');
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Share Your Story';
+        }
     });
 }
 
 function setupFeed() {
-    // Load posts from localStorage
+    if (isFirestoreAvailable()) {
+        // Real-time Firestore feed
+        const { collection, query, orderBy, onSnapshot } = getFs();
+        const postsCol = collection(window.db, 'posts');
+        const q = query(postsCol, orderBy('timestamp', 'desc'));
+        onSnapshot(q, (snapshot) => {
+            posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            displayPosts();
+        }, (error) => {
+            console.error('Feed error:', error);
+            // Fallback to localStorage if snapshot fails
+            posts = JSON.parse(localStorage.getItem('hoopboard_posts')) || [];
+            displayPosts();
+        });
+        return;
+    }
+
+    // localStorage fallback
     posts = JSON.parse(localStorage.getItem('hoopboard_posts')) || [];
-    
-    // If no posts, show message
     if (posts.length === 0) {
         const feed = document.getElementById('feed');
         feed.innerHTML = `
@@ -132,22 +162,17 @@ function setupFeed() {
         `;
         return;
     }
-    
-    // Display posts
     displayPosts();
 }
 
 function displayPosts() {
     const feed = document.getElementById('feed');
-    
-    // Clear existing posts (except the intro)
+    if (!feed) return;
+
     const intro = feed.querySelector('.intro');
     feed.innerHTML = '';
-    if (intro) {
-        feed.appendChild(intro);
-    }
+    if (intro) feed.appendChild(intro);
     
-    // Add each post
     posts.forEach(post => {
         const postElement = createPostElement(post);
         feed.appendChild(postElement);
@@ -159,12 +184,11 @@ function createPostElement(post) {
     postDiv.className = 'post';
     postDiv.dataset.postId = post.id;
     
-    const timeAgo = getTimeAgo(post.timestamp);
-    const commentCount = post.comments ? post.comments.length : 0;
+    const timeAgo = getTimeAgo(post.timestamp && post.timestamp.seconds ? new Date(post.timestamp.seconds * 1000).toISOString() : post.timestamp);
+    const commentCount = typeof post.commentCount === 'number' ? post.commentCount : (post.comments ? post.comments.length : 0);
     
-    // Show first comment if it exists
     let firstCommentHtml = '';
-    if (post.comments && post.comments.length > 0) {
+    if (!isFirestoreAvailable() && post.comments && post.comments.length > 0) {
         const firstComment = post.comments[0];
         const commentTimeAgo = getTimeAgo(firstComment.timestamp);
         firstCommentHtml = `
@@ -179,13 +203,12 @@ function createPostElement(post) {
         `;
     }
     
-    // Show "View More Comments" button if there are more than 1 comment
     let viewMoreButton = '';
-    if (post.comments && post.comments.length > 1) {
+    if (commentCount > 0) {
         viewMoreButton = `
             <div class="view-more-comments">
                 <a href="view-post.html?id=${post.id}" class="view-more-btn">
-                    View ${post.comments.length - 1} more comment${post.comments.length - 1 !== 1 ? 's' : ''}
+                    View ${commentCount} comment${commentCount !== 1 ? 's' : ''}
                 </a>
             </div>
         `;
@@ -193,10 +216,8 @@ function createPostElement(post) {
     
     postDiv.innerHTML = `
         <div class="post-header">
-            <span class="post-meta">${post.position} • ${post.region} • ${timeAgo}</span>
-            <button class="delete-post-btn" onclick="deletePost(${post.id})" title="Delete post">
-                🗑️
-            </button>
+            <span class="post-meta">${escapeHtml(post.position)} • ${escapeHtml(post.region)} • ${timeAgo}</span>
+            <button class="delete-post-btn" onclick="deletePost('${post.id}')" title="Delete post">🗑️</button>
         </div>
         <div class="post-content">
             ${escapeHtml(post.content)}
@@ -205,8 +226,8 @@ function createPostElement(post) {
         ${viewMoreButton}
         <div class="post-footer">
             <div class="post-actions">
-                <button class="like-button ${post.liked ? 'liked' : ''}" onclick="toggleLike(${post.id})">
-                    ${post.liked ? '❤️' : '🤍'} ${post.likes} Like${post.likes !== 1 ? 's' : ''}
+                <button class="like-button ${post.liked ? 'liked' : ''}" onclick="toggleLike('${post.id}')">
+                    ${post.liked ? '❤️' : '🤍'} ${post.likes || 0} Like${(post.likes || 0) !== 1 ? 's' : ''}
                 </button>
                 <a href="view-post.html?id=${post.id}" class="comment-button">
                     💬 ${commentCount} Comment${commentCount !== 1 ? 's' : ''}
@@ -218,100 +239,80 @@ function createPostElement(post) {
     return postDiv;
 }
 
-function deletePost(postId) {
-    // Confirm deletion
-    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-        return;
-    }
-    
-    // Find and remove the post
-    const postIndex = posts.findIndex(p => p.id === postId);
-    if (postIndex === -1) {
-        showMessage('Post not found.', 'error');
-        return;
-    }
-    
-    // Remove the post
-    posts.splice(postIndex, 1);
-    
-    // Save to localStorage
-    localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
-    
-    // Show success message
-    showMessage('Post deleted successfully!', 'success');
-    
-    // If we're on the individual post page, redirect to locker room
-    if (window.location.pathname.includes('view-post.html')) {
-        setTimeout(() => {
-            window.location.href = 'lockerroom.html';
-        }, 1500);
-    } else {
-        // If we're on the locker room page, refresh the feed
-        displayPosts();
-    }
-}
-
 function setupPostView() {
-    // Get post ID from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const postId = parseInt(urlParams.get('id'));
+    const postIdParam = urlParams.get('id');
+    const postId = isFirestoreAvailable() ? postIdParam : parseInt(postIdParam);
     
     if (!postId) {
         showMessage('Post not found.', 'error');
-        setTimeout(() => {
-            window.location.href = 'lockerroom.html';
-        }, 2000);
+        setTimeout(() => { window.location.href = 'lockerroom.html'; }, 2000);
         return;
     }
     
-    // Load posts and find the specific post
-    posts = JSON.parse(localStorage.getItem('hoopboard_posts')) || [];
+    if (isFirestoreAvailable()) {
+        const { doc, getDoc, collection, query, orderBy, onSnapshot } = getFs();
+        const postRef = doc(window.db, 'posts', postId);
+        getDoc(postRef).then(snap => {
+            if (!snap.exists()) {
+                showMessage('Post not found.', 'error');
+                setTimeout(() => { window.location.href = 'lockerroom.html'; }, 2000);
+                return;
+            }
+            const post = { id: snap.id, ...snap.data() };
+            displayPostView(post);
+            // Listen to comments in real-time
+            const commentsCol = collection(window.db, 'posts', post.id, 'comments');
+            const q = query(commentsCol, orderBy('timestamp', 'asc'));
+            onSnapshot(q, (snapshot) => {
+                const comments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                renderCommentsIntoDom(comments);
+            });
+        }).catch(err => {
+            console.error(err);
+            showMessage('Error loading post.', 'error');
+        });
+        setupCommentForm(postId, true);
+        return;
+    }
+
+    // localStorage fallback
     const post = posts.find(p => p.id === postId);
-    
     if (!post) {
         showMessage('Post not found.', 'error');
-        setTimeout(() => {
-            window.location.href = 'lockerroom.html';
-        }, 2000);
+        setTimeout(() => { window.location.href = 'lockerroom.html'; }, 2000);
         return;
     }
-    
-    // Display the post
     displayPostView(post);
-    
-    // Set up comment form
-    setupCommentForm(postId);
+    setupCommentForm(postId, false);
 }
 
 function displayPostView(post) {
     const postView = document.getElementById('postView');
-    const timeAgo = getTimeAgo(post.timestamp);
+    const timeIso = post.timestamp && post.timestamp.seconds ? new Date(post.timestamp.seconds * 1000).toISOString() : post.timestamp;
+    const timeAgo = getTimeAgo(timeIso);
     
     postView.innerHTML = `
         <div class="post post-detail">
             <div class="post-header">
-                <span class="post-meta">${post.position} • ${post.region} • ${timeAgo}</span>
-                <button class="delete-post-btn" onclick="deletePost(${post.id})" title="Delete post">
-                    🗑️
-                </button>
+                <span class="post-meta">${escapeHtml(post.position)} • ${escapeHtml(post.region)} • ${timeAgo}</span>
+                <button class="delete-post-btn" onclick="deletePost('${post.id}')" title="Delete post">🗑️</button>
             </div>
             <div class="post-content">
                 ${escapeHtml(post.content)}
             </div>
             <div class="post-footer">
                 <div class="post-actions">
-                    <button class="like-button ${post.liked ? 'liked' : ''}" onclick="toggleLike(${post.id})">
-                        ${post.liked ? '❤️' : '🤍'} ${post.likes} Like${post.likes !== 1 ? 's' : ''}
+                    <button class="like-button ${post.liked ? 'liked' : ''}" onclick="toggleLike('${post.id}')">
+                        ${post.liked ? '❤️' : '🤍'} ${post.likes || 0} Like${(post.likes || 0) !== 1 ? 's' : ''}
                     </button>
                 </div>
             </div>
         </div>
         
         <div class="comments-section">
-            <h3>Comments (${post.comments ? post.comments.length : 0})</h3>
-            <div id="commentsList">
-                ${renderComments(post.comments || [])}
-            </div>
+            <h3>Comments</h3>
+            <div id="commentsList"></div>
             <div class="comment-form-container">
                 <h4>Add a Comment</h4>
                 <form id="commentForm">
@@ -323,17 +324,23 @@ function displayPostView(post) {
     `;
 }
 
+function renderCommentsIntoDom(comments) {
+    const commentsList = document.getElementById('commentsList');
+    commentsList.innerHTML = renderComments(comments || []);
+}
+
 function renderComments(comments) {
-    if (comments.length === 0) {
+    if (!comments || comments.length === 0) {
         return '<p class="no-comments">No comments yet. Be the first to respond!</p>';
     }
     
     return comments.map(comment => {
-        const timeAgo = getTimeAgo(comment.timestamp);
+        const timeIso = comment.timestamp && comment.timestamp.seconds ? new Date(comment.timestamp.seconds * 1000).toISOString() : comment.timestamp;
+        const timeAgo = getTimeAgo(timeIso);
         return `
             <div class="comment" data-comment-id="${comment.id}">
                 <div class="comment-header">
-                    <span class="comment-meta">${comment.position} • ${comment.region} • ${timeAgo}</span>
+                    <span class="comment-meta">${escapeHtml(comment.position)} • ${escapeHtml(comment.region)} • ${timeAgo}</span>
                 </div>
                 <div class="comment-content">
                     ${escapeHtml(comment.content)}
@@ -343,212 +350,179 @@ function renderComments(comments) {
     }).join('');
 }
 
-function setupCommentForm(postId) {
+function setupCommentForm(postId, useFirestore) {
     const commentForm = document.getElementById('commentForm');
     if (!commentForm) return;
     
-    commentForm.addEventListener('submit', function(e) {
+    commentForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-        
         const content = document.getElementById('commentContent').value.trim();
-        
         if (!content) {
             showMessage('Please enter a comment.', 'error');
             return;
         }
-        
         if (content.length < 3) {
             showMessage('Comment should be at least 3 characters long.', 'error');
             return;
         }
         
-        // Find the post
-        const post = posts.find(p => p.id === postId);
-        if (!post) {
-            showMessage('Post not found.', 'error');
-            return;
+        try {
+            if (isFirestoreAvailable() && useFirestore) {
+                const { collection, addDoc, serverTimestamp, doc, updateDoc, increment } = getFs();
+                const commentsCol = collection(window.db, 'posts', postId, 'comments');
+                await addDoc(commentsCol, {
+                    content,
+                    position: 'Anonymous Player',
+                    region: 'Community',
+                    timestamp: serverTimestamp()
+                });
+                // increment comment count on post
+                await updateDoc(doc(window.db, 'posts', postId), { commentCount: increment(1) });
+                showMessage('Comment posted successfully!', 'success');
+                commentForm.reset();
+                setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
+                return;
+            }
+            
+            // localStorage fallback
+            const post = posts.find(p => p.id === postId);
+            if (!post) {
+                showMessage('Post not found.', 'error');
+                return;
+            }
+            const newComment = {
+                id: Date.now(),
+                content,
+                position: 'Anonymous Player',
+                region: 'Community',
+                timestamp: new Date().toISOString()
+            };
+            if (!post.comments) post.comments = [];
+            post.comments.push(newComment);
+            localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
+            showMessage('Comment posted successfully!', 'success');
+            commentForm.reset();
+            setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
+        } catch (err) {
+            console.error(err);
+            showMessage('Failed to add comment.', 'error');
         }
-        
-        // Create new comment
-        const newComment = {
-            id: Date.now(),
-            content: content,
-            position: 'Anonymous Player', // Could be made configurable later
-            region: 'Community',
-            timestamp: new Date().toISOString()
-        };
-        
-        // Add comment to post
-        if (!post.comments) {
-            post.comments = [];
-        }
-        post.comments.push(newComment);
-        
-        // Save to localStorage
-        localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
-        
-        // Show success message
-        showMessage('Comment posted successfully!', 'success');
-        
-        // Reset form
-        commentForm.reset();
-        
-        // Redirect back to the forum after a short delay
-        setTimeout(() => {
-            window.location.href = 'lockerroom.html';
-        }, 1500);
     });
 }
 
 function toggleLike(postId) {
+    if (isFirestoreAvailable()) {
+        // Track liked state per-device
+        const likedKey = 'hoopboard_liked_posts';
+        const likedSet = new Set(JSON.parse(localStorage.getItem(likedKey)) || []);
+        const isLiked = likedSet.has(postId);
+        const { doc, updateDoc, increment } = getFs();
+        updateDoc(doc(window.db, 'posts', postId), { likes: increment(isLiked ? -1 : 1) })
+            .then(() => {
+                if (isLiked) likedSet.delete(postId); else likedSet.add(postId);
+                localStorage.setItem(likedKey, JSON.stringify(Array.from(likedSet)));
+            })
+            .catch(err => console.error('Like failed', err));
+        return;
+    }
+
+    // localStorage fallback
     const post = posts.find(p => p.id === postId);
     if (!post) return;
-    
     if (post.liked) {
-        post.likes--;
-        post.liked = false;
+        post.likes--; post.liked = false;
     } else {
-        post.likes++;
-        post.liked = true;
+        post.likes++; post.liked = true;
     }
-    
-    // Save to localStorage
     localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
-    
-    // Update the like button
     const likeButton = document.querySelector(`[data-post-id="${postId}"] .like-button`);
     if (likeButton) {
         likeButton.className = `like-button ${post.liked ? 'liked' : ''}`;
         likeButton.innerHTML = `${post.liked ? '❤️' : '🤍'} ${post.likes} Like${post.likes !== 1 ? 's' : ''}`;
     }
-    
-    // If we're on the post detail page, update that too
-    const detailLikeButton = document.querySelector('.post-detail .like-button');
-    if (detailLikeButton) {
-        detailLikeButton.className = `like-button ${post.liked ? 'liked' : ''}`;
-        detailLikeButton.innerHTML = `${post.liked ? '❤️' : '🤍'} ${post.likes} Like${post.likes !== 1 ? 's' : ''}`;
+}
+
+async function deletePost(postId) {
+    if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) return;
+
+    try {
+        if (isFirestoreAvailable()) {
+            const { doc, collection, getDocs, deleteDoc } = getFs();
+            // delete comments
+            const commentsSnap = await getDocs(collection(window.db, 'posts', postId, 'comments'));
+            await Promise.all(commentsSnap.docs.map(d => deleteDoc(d.ref)));
+            // delete post
+            await deleteDoc(doc(window.db, 'posts', postId));
+            showMessage('Post deleted successfully!', 'success');
+            if (window.location.pathname.includes('view-post.html')) {
+                setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1000);
+            }
+            return;
+        }
+
+        // localStorage fallback
+        const idx = posts.findIndex(p => p.id === postId);
+        if (idx === -1) {
+            showMessage('Post not found.', 'error');
+            return;
+        }
+        posts.splice(idx, 1);
+        localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
+        showMessage('Post deleted successfully!', 'success');
+        if (window.location.pathname.includes('view-post.html')) {
+            setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1000);
+        } else {
+            displayPosts();
+        }
+    } catch (err) {
+        console.error(err);
+        showMessage('Failed to delete post.', 'error');
     }
 }
 
 function setupLikeButtons() {
-    // This is handled by the toggleLike function now
+    // No-op: likes handled per button handlers and real-time updates
 }
 
-function getTimeAgo(timestamp) {
-    const now = new Date();
-    const postTime = new Date(timestamp);
-    const diffInSeconds = Math.floor((now - postTime) / 1000);
-    
-    if (diffInSeconds < 60) {
-        return 'Just now';
-    } else if (diffInSeconds < 3600) {
-        const minutes = Math.floor(diffInSeconds / 60);
-        return `${minutes} min${minutes !== 1 ? 's' : ''} ago`;
-    } else if (diffInSeconds < 86400) {
-        const hours = Math.floor(diffInSeconds / 3600);
-        return `${hours} hr${hours !== 1 ? 's' : ''} ago`;
-    } else if (diffInSeconds < 2592000) {
-        const days = Math.floor(diffInSeconds / 86400);
-        return `${days} day${days !== 1 ? 's' : ''} ago`;
-    } else {
-        return postTime.toLocaleDateString();
-    }
+function showMessage(message, type) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    Object.assign(toast.style, {
+        position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+        background: type === 'error' ? '#ff4d4f' : '#111', color: '#fff', padding: '10px 14px',
+        borderRadius: '8px', zIndex: 2000, boxShadow: '0 6px 20px rgba(0,0,0,0.2)'
+    });
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 1800);
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+function escapeHtml(unsafe) {
+    if (unsafe == null) return '';
+    return String(unsafe)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
-function showMessage(message, type = 'info') {
-    // Remove existing messages
-    const existingMessage = document.querySelector('.message');
-    if (existingMessage) {
-        existingMessage.remove();
+function getTimeAgo(isoString) {
+    if (!isoString) return 'just now';
+    const date = new Date(isoString);
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+    const intervals = [
+        { label: 'year', seconds: 31536000 },
+        { label: 'month', seconds: 2592000 },
+        { label: 'day', seconds: 86400 },
+        { label: 'hr', seconds: 3600 },
+        { label: 'min', seconds: 60 }
+    ];
+    for (const interval of intervals) {
+        const count = Math.floor(seconds / interval.seconds);
+        if (count >= 1) return `${count} ${interval.label}${count > 1 ? 's' : ''} ago`;
     }
-    
-    // Create message element
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${type}`;
-    messageDiv.textContent = message;
-    
-    // Insert after the intro section
-    const intro = document.querySelector('.intro');
-    if (intro) {
-        intro.parentNode.insertBefore(messageDiv, intro.nextSibling);
-    } else {
-        // If no intro, insert at the top of main
-        const main = document.querySelector('main');
-        main.insertBefore(messageDiv, main.firstChild);
-    }
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (messageDiv.parentNode) {
-            messageDiv.remove();
-        }
-    }, 5000);
+    return 'just now';
 }
-
-// Future Airtable integration functions (commented out for now)
-/*
-async function savePostToAirtable(post) {
-    try {
-        const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${AIRTABLE_TOKEN}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                fields: {
-                    'Content': post.content,
-                    'Position': post.position,
-                    'Region': post.region,
-                    'Division': post.division,
-                    'Timestamp': post.timestamp
-                }
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to save to Airtable');
-        }
-        
-        return await response.json();
-    } catch (error) {
-        console.error('Error saving to Airtable:', error);
-        throw error;
-    }
-}
-
-async function loadPostsFromAirtable() {
-    try {
-        const response = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${TABLE_NAME}?sort[0][field]=Timestamp&sort[0][direction]=desc`, {
-            headers: {
-                'Authorization': `Bearer ${AIRTABLE_TOKEN}`
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to load from Airtable');
-        }
-        
-        const data = await response.json();
-        return data.records.map(record => ({
-            id: record.id,
-            content: record.fields.Content,
-            position: record.fields.Position,
-            region: record.fields.Region,
-            division: record.fields.Division,
-            timestamp: record.fields.Timestamp,
-            likes: record.fields.Likes || 0,
-            liked: false
-        }));
-    } catch (error) {
-        console.error('Error loading from Airtable:', error);
-        return [];
-    }
-}
-*/
