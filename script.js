@@ -254,13 +254,24 @@ function showGeneralInstallPopup() {
     popup.innerHTML = `
         <div class="install-popup-content">
             <div class="install-popup-header">
-                <h3>📱 Install HoopBoard App</h3>
+                <h3>📱 Add HoopBoard to Your Home Screen</h3>
                 <button class="close-popup" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
             </div>
-            <p>Get the full app experience on your phone!</p>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+                Want to use HoopBoard like an app? Add it to your home screen for quick access!
+            </p>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h4 style="margin: 0 0 15px 0; color: #333;">How to add to home screen:</h4>
+                <ol style="text-align: left; margin: 0; padding-left: 20px; line-height: 1.8;">
+                    <li><strong>Look for the install icon</strong> in your browser (usually in the address bar)</li>
+                    <li><strong>Tap the install button</strong> when it appears</li>
+                    <li><strong>Confirm the installation</strong> when prompted</li>
+                    <li><strong>Enjoy HoopBoard as an app!</strong></li>
+                </ol>
+            </div>
             <div class="install-buttons">
-                <button class="install-btn primary" onclick="showInstallInstructions()">How to Install</button>
-                <button class="install-btn secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Maybe Later</button>
+                <button class="install-btn primary" onclick="showChromeInstallInstructions()">Show Me Where to Tap</button>
+                <button class="install-btn secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Not Now</button>
             </div>
         </div>
     `;
@@ -482,6 +493,36 @@ function installApp() {
             if (popup) popup.remove();
         });
     }
+}
+
+function showChromeInstallInstructions() {
+    // Remove popup first
+    const popup = document.querySelector('.install-popup');
+    if (popup) popup.remove();
+    
+    // Show instructions overlay
+    const overlay = document.createElement('div');
+    overlay.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 30px; border-radius: 15px; max-width: 400px; text-align: center;">
+                <h3>📱 Find the Install Button</h3>
+                <p style="font-size: 16px; margin-bottom: 20px;">Look for the <strong>install button</strong> in your browser:</p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <p style="margin: 0; font-size: 14px;">🔗 <strong>Mobile Chrome:</strong> Look for a "+" or "Install" button in the address bar</p>
+                    <p style="margin: 5px 0 0 0; font-size: 14px;">💻 <strong>Desktop Chrome:</strong> Look for a "+" icon in the address bar</p>
+                    <p style="margin: 5px 0 0 0; font-size: 14px;">📱 <strong>Alternative:</strong> Tap the menu (3 dots) → "Add to Home screen"</p>
+                </div>
+                <p style="font-size: 14px; color: #666;">Tap it to install HoopBoard as an app!</p>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: #ff6b6b; color: white; border: none; padding: 12px 24px; border-radius: 20px; margin-top: 15px; font-weight: 600;">Got it!</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    // Auto-hide after 15 seconds
+    setTimeout(() => {
+        if (overlay.parentNode) overlay.remove();
+    }, 15000);
 }
 
 function showInstallInstructions() {
