@@ -1033,17 +1033,26 @@ function setupCommentForm(postId, useFirestore) {
             commentForm = commentTextarea.closest('form');
             console.log('Found form via textarea parent:', commentForm);
         }
+        
+        // Additional debugging - check if we're on the right page
+        console.log('Current page:', window.location.pathname);
+        console.log('PostView element exists:', !!document.getElementById('postView'));
+        console.log('PostView innerHTML length:', document.getElementById('postView')?.innerHTML?.length || 0);
     }
     
     console.log('Final comment form found:', !!commentForm);
     if (!commentForm) {
         console.error('Comment form not found!');
+        console.error('Available elements with "comment" in ID:', 
+            Array.from(document.querySelectorAll('[id*="comment"]')).map(el => el.id));
         return;
     }
     
     // Remove any existing listeners to prevent duplicates
     const newForm = commentForm.cloneNode(true);
     commentForm.parentNode.replaceChild(newForm, commentForm);
+    
+    console.log('Form cloned and replaced. Adding submit listener...');
     
     newForm.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1121,6 +1130,22 @@ function setupCommentForm(postId, useFirestore) {
     });
     
     console.log('Comment form setup complete');
+    
+    // Add a test button for debugging
+    const testButton = document.createElement('button');
+    testButton.textContent = 'Test Comment Form';
+    testButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000; background: red; color: white; padding: 10px;';
+    testButton.onclick = () => {
+        console.log('Test button clicked - checking comment form...');
+        const form = document.getElementById('commentForm');
+        console.log('Form found:', !!form);
+        if (form) {
+            console.log('Form HTML:', form.outerHTML);
+            const textarea = document.getElementById('commentContent');
+            console.log('Textarea found:', !!textarea);
+        }
+    };
+    document.body.appendChild(testButton);
 }
 
 function toggleLike(postId) {
