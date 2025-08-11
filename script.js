@@ -201,7 +201,7 @@ function createPostElement(post) {
         firstCommentHtml = `
             <div class="first-comment">
                 <div class="comment-header">
-                    <span class="comment-meta">${firstComment.position} • ${firstComment.region} • ${commentTimeAgo}</span>
+                    <span class="comment-meta">${escapeHtml(firstComment.position)} • ${escapeHtml(firstComment.region)} • ${commentTimeAgo}</span>
                 </div>
                 <div class="comment-content">
                     ${escapeHtml(firstComment.content)}
