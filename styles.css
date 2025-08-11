@@ -1053,8 +1053,9 @@ footer.show {
 
 .social-links {
     display: flex;
-    gap: 12px;
     justify-content: center;
+    align-items: center;
+    margin-top: 10px;
 }
 
 .social-link {
@@ -1062,14 +1063,12 @@ footer.show {
     text-decoration: none;
     font-size: 14px;
     transition: all 0.3s;
-    padding: 4px;
-    border-radius: 50%;
+    padding: 8px 16px;
+    border-radius: 20px;
     background: rgba(255,255,255,0.1);
-    width: 28px;
-    height: 28px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
 }
 
 .social-link:hover {
@@ -1080,14 +1079,6 @@ footer.show {
 
 .social-link.instagram:hover {
     background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
-}
-
-.social-link.twitter:hover {
-    background: #1da1f2;
-}
-
-.social-link.linkedin:hover {
-    background: #0077b5;
 }
 
 /* Message System */
