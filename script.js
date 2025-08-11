@@ -53,58 +53,283 @@ function registerServiceWorker() {
     }
 }
 
-// PWA Install prompt
+// PWA Install prompt - Enhanced version
 let deferredPrompt;
+let installShown = false;
+
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
     
-    // Show install button after 5 seconds
-    setTimeout(() => {
-        showInstallPrompt();
-    }, 5000);
+    // Show install popup immediately
+    showInstallPopup();
 });
 
-function showInstallPrompt() {
-    if (deferredPrompt) {
-        const installButton = document.createElement('button');
-        installButton.textContent = '📱 Install HoopBoard App';
-        installButton.className = 'install-prompt-btn';
-        installButton.style.cssText = `
+// Also show popup for iOS Safari (which doesn't support beforeinstallprompt)
+window.addEventListener('load', () => {
+    // Check if it's iOS Safari
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    
+    if (isIOS && isSafari && !installShown) {
+        setTimeout(() => {
+            showIOSInstallPopup();
+        }, 3000);
+    }
+});
+
+function showInstallPopup() {
+    if (deferredPrompt && !installShown) {
+        installShown = true;
+        
+        const popup = document.createElement('div');
+        popup.className = 'install-popup';
+        popup.innerHTML = `
+            <div class="install-popup-content">
+                <div class="install-popup-header">
+                    <h3>📱 Install HoopBoard App</h3>
+                    <button class="close-popup" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+                </div>
+                <p>Get the full app experience on your phone!</p>
+                <div class="install-buttons">
+                    <button class="install-btn primary" onclick="installApp()">Install Now</button>
+                    <button class="install-btn secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Maybe Later</button>
+                </div>
+            </div>
+        `;
+        
+        popup.style.cssText = `
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.3s ease;
+        `;
+        
+        const content = popup.querySelector('.install-popup-content');
+        content.style.cssText = `
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        `;
+        
+        const header = popup.querySelector('.install-popup-header');
+        header.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        `;
+        
+        const closeBtn = popup.querySelector('.close-popup');
+        closeBtn.style.cssText = `
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+        `;
+        
+        const buttons = popup.querySelector('.install-buttons');
+        buttons.style.cssText = `
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        `;
+        
+        const installBtn = popup.querySelector('.install-btn.primary');
+        installBtn.style.cssText = `
             background: #ff6b6b;
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 12px 24px;
             border-radius: 25px;
             font-weight: 600;
-            z-index: 1000;
-            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
             cursor: pointer;
+            flex: 1;
         `;
         
-        installButton.addEventListener('click', () => {
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('User accepted the install prompt');
-                }
-                deferredPrompt = null;
-                installButton.remove();
-            });
-        });
+        const laterBtn = popup.querySelector('.install-btn.secondary');
+        laterBtn.style.cssText = `
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            flex: 1;
+        `;
         
-        document.body.appendChild(installButton);
+        document.body.appendChild(popup);
         
-        // Auto-hide after 10 seconds
+        // Auto-hide after 15 seconds
         setTimeout(() => {
-            if (installButton.parentNode) {
-                installButton.remove();
+            if (popup.parentNode) {
+                popup.remove();
             }
-        }, 10000);
+        }, 15000);
     }
+}
+
+function showIOSInstallPopup() {
+    if (installShown) return;
+    installShown = true;
+    
+    const popup = document.createElement('div');
+    popup.className = 'install-popup ios';
+    popup.innerHTML = `
+        <div class="install-popup-content">
+            <div class="install-popup-header">
+                <h3>📱 Install HoopBoard App</h3>
+                <button class="close-popup" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+            </div>
+            <p>To install HoopBoard on your iPhone:</p>
+            <ol style="text-align: left; margin: 15px 0;">
+                <li>Tap the <strong>Share</strong> button below</li>
+                <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+                <li>Tap <strong>"Add"</strong> to install</li>
+            </ol>
+            <div class="install-buttons">
+                <button class="install-btn primary" onclick="showIOSShare()">Show Share Button</button>
+                <button class="install-btn secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Maybe Later</button>
+            </div>
+        </div>
+    `;
+    
+    // Apply same styles as above
+    popup.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    const content = popup.querySelector('.install-popup-content');
+    content.style.cssText = `
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    `;
+    
+    const header = popup.querySelector('.install-popup-header');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    `;
+    
+    const closeBtn = popup.querySelector('.close-popup');
+    closeBtn.style.cssText = `
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+    `;
+    
+    const buttons = popup.querySelector('.install-buttons');
+    buttons.style.cssText = `
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    `;
+    
+    const installBtn = popup.querySelector('.install-btn.primary');
+    installBtn.style.cssText = `
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        flex: 1;
+    `;
+    
+    const laterBtn = popup.querySelector('.install-btn.secondary');
+    laterBtn.style.cssText = `
+        background: #f0f0f0;
+        color: #333;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        flex: 1;
+    `;
+    
+    document.body.appendChild(popup);
+    
+    // Auto-hide after 20 seconds
+    setTimeout(() => {
+        if (popup.parentNode) {
+            popup.remove();
+        }
+    }, 20000);
+}
+
+function installApp() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+                showMessage('App installed successfully!', 'success');
+            }
+            deferredPrompt = null;
+            // Remove popup
+            const popup = document.querySelector('.install-popup');
+            if (popup) popup.remove();
+        });
+    }
+}
+
+function showIOSShare() {
+    // Remove popup first
+    const popup = document.querySelector('.install-popup');
+    if (popup) popup.remove();
+    
+    // Show instructions overlay
+    const overlay = document.createElement('div');
+    overlay.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;">
+            <div style="background: white; padding: 30px; border-radius: 15px; max-width: 400px; text-align: center;">
+                <h3>📱 Install HoopBoard</h3>
+                <p>Look for the <strong>Share</strong> button in your browser toolbar (usually at the bottom)</p>
+                <p>Then tap <strong>"Add to Home Screen"</strong></p>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: #ff6b6b; color: white; border: none; padding: 10px 20px; border-radius: 20px; margin-top: 15px;">Got it!</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        if (overlay.parentNode) overlay.remove();
+    }, 10000);
 }
 
 function setupFooterScroll() {
