@@ -291,7 +291,8 @@ function setupPostView() {
             showMessage('Error loading post.', 'error');
         });
         console.log('Setting up comment form with Firestore');
-        setupCommentForm(postId, true);
+        // Add a small delay to ensure DOM is updated
+        setTimeout(() => setupCommentForm(postId, true), 100);
         return;
     }
 
@@ -306,7 +307,8 @@ function setupPostView() {
     console.log('Post loaded from localStorage:', post);
     displayPostView(post);
     console.log('Setting up comment form with localStorage');
-    setupCommentForm(postId, false);
+    // Add a small delay to ensure DOM is updated
+    setTimeout(() => setupCommentForm(postId, false), 100);
 }
 
 function displayPostView(post) {
