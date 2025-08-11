@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!installShown) {
                 showIOSInstallPopup();
             }
-        }, 1000);
+        }, 500); // Reduced to 500ms for faster popup
     }
 });
 
@@ -360,18 +360,24 @@ function showIOSInstallPopup() {
     popup.innerHTML = `
         <div class="install-popup-content">
             <div class="install-popup-header">
-                <h3>📱 Install HoopBoard App</h3>
+                <h3>📱 Add HoopBoard to Your Home Screen</h3>
                 <button class="close-popup" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
             </div>
-            <p><strong>To install HoopBoard on your iPhone:</strong></p>
-            <ol style="text-align: left; margin: 15px 0; line-height: 1.6;">
-                <li>Tap the <strong>Share</strong> button (square with arrow up)</li>
-                <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
-                <li>Tap <strong>"Add"</strong> to install</li>
-            </ol>
+            <p style="font-size: 16px; margin-bottom: 20px;">
+                Want to use HoopBoard like an app? Add it to your home screen for quick access!
+            </p>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                <h4 style="margin: 0 0 15px 0; color: #333;">How to add to home screen:</h4>
+                <ol style="text-align: left; margin: 0; padding-left: 20px; line-height: 1.8;">
+                    <li><strong>Tap the Share button</strong> (square with arrow up) at the bottom of your screen</li>
+                    <li><strong>Scroll down</strong> in the menu that appears</li>
+                    <li><strong>Tap "Add to Home Screen"</strong></li>
+                    <li><strong>Tap "Add"</strong> to confirm</li>
+                </ol>
+            </div>
             <div class="install-buttons">
-                <button class="install-btn primary" onclick="showIOSShare()">Show Me How</button>
-                <button class="install-btn secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Maybe Later</button>
+                <button class="install-btn primary" onclick="showIOSShare()">Show Me Where to Tap</button>
+                <button class="install-btn secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Not Now</button>
             </div>
         </div>
     `;
@@ -533,19 +539,23 @@ function showIOSShare() {
     overlay.innerHTML = `
         <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; display: flex; align-items: center; justify-content: center;">
             <div style="background: white; padding: 30px; border-radius: 15px; max-width: 400px; text-align: center;">
-                <h3>📱 Install HoopBoard</h3>
-                <p>Look for the <strong>Share</strong> button in your browser toolbar (usually at the bottom)</p>
-                <p>Then tap <strong>"Add to Home Screen"</strong></p>
-                <button onclick="this.parentElement.parentElement.remove()" style="background: #ff6b6b; color: white; border: none; padding: 10px 20px; border-radius: 20px; margin-top: 15px;">Got it!</button>
+                <h3>📱 Find the Share Button</h3>
+                <p style="font-size: 16px; margin-bottom: 20px;">Look for the <strong>Share button</strong> at the bottom of your screen:</p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <p style="margin: 0; font-size: 14px;">🔗 It looks like a square with an arrow pointing up</p>
+                    <p style="margin: 5px 0 0 0; font-size: 14px;">📍 Usually in the bottom toolbar of Safari</p>
+                </div>
+                <p style="font-size: 14px; color: #666;">Tap it, then scroll down to find "Add to Home Screen"</p>
+                <button onclick="this.parentElement.parentElement.remove()" style="background: #ff6b6b; color: white; border: none; padding: 12px 24px; border-radius: 20px; margin-top: 15px; font-weight: 600;">Got it!</button>
             </div>
         </div>
     `;
     document.body.appendChild(overlay);
     
-    // Auto-hide after 10 seconds
+    // Auto-hide after 15 seconds
     setTimeout(() => {
         if (overlay.parentNode) overlay.remove();
-    }, 10000);
+    }, 15000);
 }
 
 function setupFooterScroll() {
