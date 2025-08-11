@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://hoopboard.org/sitemap.xml
+
+# Crawl delay (optional - be respectful to servers)
+Crawl-delay: 1 
