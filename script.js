@@ -65,22 +65,57 @@ window.addEventListener('beforeinstallprompt', (e) => {
     showInstallPopup();
 });
 
-// Show popup for all mobile users
+// Show popup for all mobile users - More aggressive approach
 window.addEventListener('load', () => {
+    console.log('Page loaded, checking for mobile...');
+    
     // Check if it's mobile
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log('Is mobile:', isMobile);
+    console.log('User agent:', navigator.userAgent);
     
-    if (isMobile && !installShown) {
+    // Show popup for ALL mobile users, regardless of other conditions
+    if (isMobile) {
+        console.log('Mobile detected, will show popup in 2 seconds...');
         setTimeout(() => {
+            console.log('Showing popup now...');
             // Check if it's iOS Safari
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
             
+            console.log('Is iOS:', isIOS);
+            console.log('Is Safari:', isSafari);
+            
             if (isIOS && isSafari) {
+                console.log('Showing iOS popup');
                 showIOSInstallPopup();
             } else {
-                // For Android and other browsers, show a general install popup
+                console.log('Showing general popup');
                 showGeneralInstallPopup();
+            }
+        }, 2000); // Reduced to 2 seconds
+    }
+});
+
+// Also try showing popup on DOMContentLoaded as backup
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, checking for mobile again...');
+    
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile && !installShown) {
+        console.log('Mobile detected on DOM load, will show popup in 3 seconds...');
+        setTimeout(() => {
+            if (!installShown) {
+                console.log('Showing popup from DOM load...');
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+                
+                if (isIOS && isSafari) {
+                    showIOSInstallPopup();
+                } else {
+                    showGeneralInstallPopup();
+                }
             }
         }, 3000);
     }
@@ -442,6 +477,26 @@ function showInstallInstructions() {
     setTimeout(() => {
         if (overlay.parentNode) overlay.remove();
     }, 10000);
+}
+
+// Manual test function - you can call this in browser console
+function testPopup() {
+    console.log('Manual popup test triggered');
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log('Is mobile:', isMobile);
+    
+    if (isMobile) {
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+        
+        if (isIOS && isSafari) {
+            showIOSInstallPopup();
+        } else {
+            showGeneralInstallPopup();
+        }
+    } else {
+        alert('Not on mobile device');
+    }
 }
 
 function showIOSShare() {
