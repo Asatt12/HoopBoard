@@ -55,7 +55,7 @@ function registerServiceWorker() {
 
 // PWA Install prompt - Enhanced version
 let deferredPrompt;
-let installShown = false;
+let installShown = localStorage.getItem('hoopboard_welcome_shown') === 'true';
 
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
@@ -65,21 +65,21 @@ window.addEventListener('beforeinstallprompt', (e) => {
     showInstallPopup();
 });
 
-// Show welcome popup for all users
+// Show welcome popup for all users (only once per user)
 window.addEventListener('load', () => {
-    console.log('Page loaded, showing welcome popup...');
+    console.log('Page loaded, checking welcome popup...');
     
-    // Show welcome popup for everyone after 2 seconds
-    setTimeout(() => {
-        if (!installShown) {
+    // Only show welcome popup if user hasn't seen it before
+    if (!installShown) {
+        setTimeout(() => {
             showWelcomePopup();
-        }
-    }, 2000);
+        }, 2000);
+    }
 });
 
-// Also try showing popup on DOMContentLoaded as backup
+// Also try showing popup on DOMContentLoaded as backup (only if not shown before)
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, showing welcome popup...');
+    console.log('DOM loaded, checking welcome popup...');
     
     if (!installShown) {
         setTimeout(() => {
@@ -503,6 +503,7 @@ function showInstallInstructions() {
 function showWelcomePopup() {
     if (installShown) return;
     installShown = true;
+    localStorage.setItem('hoopboard_welcome_shown', 'true');
     
     console.log('Creating welcome popup...');
     
