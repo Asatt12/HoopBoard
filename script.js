@@ -1008,144 +1008,179 @@ function renderComments(comments) {
 function setupCommentForm(postId, useFirestore) {
     console.log('Setting up comment form for post:', postId, 'useFirestore:', useFirestore);
     
-    // Try multiple ways to find the form
-    let commentForm = document.getElementById('commentForm');
-    console.log('Comment form found by ID:', !!commentForm);
-    
-    if (!commentForm) {
-        // Try finding by tag name
-        const forms = document.querySelectorAll('form');
-        console.log('Total forms found:', forms.length);
-        forms.forEach((form, index) => {
-            console.log(`Form ${index}:`, form.id, form.className, form.innerHTML.substring(0, 100));
-        });
+    // Wait a bit for DOM to be ready
+    setTimeout(() => {
+        // Try multiple ways to find the form
+        let commentForm = document.getElementById('commentForm');
+        console.log('Comment form found by ID:', !!commentForm);
         
-        // Try finding by textarea
-        const textareas = document.querySelectorAll('textarea');
-        console.log('Total textareas found:', textareas.length);
-        textareas.forEach((textarea, index) => {
-            console.log(`Textarea ${index}:`, textarea.id, textarea.placeholder);
-        });
-        
-        // Try finding the form by looking for the textarea's parent form
-        const commentTextarea = document.getElementById('commentContent');
-        if (commentTextarea && commentTextarea.closest('form')) {
-            commentForm = commentTextarea.closest('form');
-            console.log('Found form via textarea parent:', commentForm);
+        if (!commentForm) {
+            // Try finding by tag name
+            const forms = document.querySelectorAll('form');
+            console.log('Total forms found:', forms.length);
+            forms.forEach((form, index) => {
+                console.log(`Form ${index}:`, form.id, form.className, form.innerHTML.substring(0, 100));
+            });
+            
+            // Try finding by textarea
+            const textareas = document.querySelectorAll('textarea');
+            console.log('Total textareas found:', textareas.length);
+            textareas.forEach((textarea, index) => {
+                console.log(`Textarea ${index}:`, textarea.id, textarea.placeholder);
+            });
+            
+            // Try finding the form by looking for the textarea's parent form
+            const commentTextarea = document.getElementById('commentContent');
+            if (commentTextarea && commentTextarea.closest('form')) {
+                commentForm = commentTextarea.closest('form');
+                console.log('Found form via textarea parent:', commentForm);
+            }
+            
+            // Additional debugging - check if we're on the right page
+            console.log('Current page:', window.location.pathname);
+            console.log('PostView element exists:', !!document.getElementById('postView'));
+            console.log('PostView innerHTML length:', document.getElementById('postView')?.innerHTML?.length || 0);
         }
         
-        // Additional debugging - check if we're on the right page
-        console.log('Current page:', window.location.pathname);
-        console.log('PostView element exists:', !!document.getElementById('postView'));
-        console.log('PostView innerHTML length:', document.getElementById('postView')?.innerHTML?.length || 0);
-    }
-    
-    console.log('Final comment form found:', !!commentForm);
-    if (!commentForm) {
-        console.error('Comment form not found!');
-        console.error('Available elements with "comment" in ID:', 
-            Array.from(document.querySelectorAll('[id*="comment"]')).map(el => el.id));
-        return;
-    }
-    
-    // Remove any existing listeners to prevent duplicates
-    const newForm = commentForm.cloneNode(true);
-    commentForm.parentNode.replaceChild(newForm, commentForm);
-    
-    console.log('Form cloned and replaced. Adding submit listener...');
-    
-    newForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        console.log('Comment form submitted!');
-        const content = document.getElementById('commentContent').value.trim();
-        console.log('Comment content:', content);
-        if (!content) {
-            showMessage('Please enter a comment.', 'error');
-            return;
-        }
-        if (content.length < 3) {
-            showMessage('Comment should be at least 3 characters long.', 'error');
+        console.log('Final comment form found:', !!commentForm);
+        if (!commentForm) {
+            console.error('Comment form not found!');
+            console.error('Available elements with "comment" in ID:', 
+                Array.from(document.querySelectorAll('[id*="comment"]')).map(el => el.id));
             return;
         }
         
-        console.log('Firestore available:', isFirestoreAvailable());
-        console.log('useFirestore parameter:', useFirestore);
-        try {
-            if (isFirestoreAvailable() && useFirestore) {
-                console.log('Adding comment to Firestore for post:', postId);
-                const { collection, addDoc, serverTimestamp, doc, updateDoc, increment } = getFs();
-                console.log('Firestore functions loaded:', !!collection, !!addDoc, !!serverTimestamp);
-                
-                const commentsCol = collection(window.db, 'posts', postId, 'comments');
-                console.log('Comments collection reference:', commentsCol);
-                
-                const commentData = {
-                    content,
-                    position: 'Anonymous Player',
-                    region: 'Community',
-                    timestamp: serverTimestamp()
-                };
-                console.log('Comment data:', commentData);
-                
-                console.log('Attempting to add document...');
-                const commentRef = await addDoc(commentsCol, commentData);
-                console.log('Comment added with ID:', commentRef.id);
-                
-                console.log('Attempting to increment comment count...');
-                // increment comment count on post
-                await updateDoc(doc(window.db, 'posts', postId), { commentCount: increment(1) });
-                console.log('Comment count incremented');
-                
-                showMessage('Comment posted successfully!', 'success');
-                newForm.reset();
-                setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
+        // Remove any existing listeners to prevent duplicates
+        const newForm = commentForm.cloneNode(true);
+        commentForm.parentNode.replaceChild(newForm, commentForm);
+        
+        console.log('Form cloned and replaced. Adding submit listener...');
+        
+        newForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('Comment form submitted!');
+            const content = document.getElementById('commentContent').value.trim();
+            console.log('Comment content:', content);
+            if (!content) {
+                showMessage('Please enter a comment.', 'error');
+                return;
+            }
+            if (content.length < 3) {
+                showMessage('Comment should be at least 3 characters long.', 'error');
                 return;
             }
             
-            console.log('Using localStorage fallback');
-            // localStorage fallback
-            const post = posts.find(p => p.id === postId);
-            if (!post) {
-                showMessage('Post not found.', 'error');
-                return;
+            console.log('Firestore available:', isFirestoreAvailable());
+            console.log('useFirestore parameter:', useFirestore);
+            try {
+                if (isFirestoreAvailable() && useFirestore) {
+                    console.log('Adding comment to Firestore for post:', postId);
+                    const { collection, addDoc, serverTimestamp, doc, updateDoc, increment } = getFs();
+                    console.log('Firestore functions loaded:', !!collection, !!addDoc, !!serverTimestamp);
+                    
+                    const commentsCol = collection(window.db, 'posts', postId, 'comments');
+                    console.log('Comments collection reference:', commentsCol);
+                    
+                    const commentData = {
+                        content,
+                        position: 'Anonymous Player',
+                        region: 'Community',
+                        timestamp: serverTimestamp()
+                    };
+                    console.log('Comment data:', commentData);
+                    
+                    console.log('Attempting to add document...');
+                    const commentRef = await addDoc(commentsCol, commentData);
+                    console.log('Comment added with ID:', commentRef.id);
+                    
+                    console.log('Attempting to increment comment count...');
+                    // increment comment count on post
+                    await updateDoc(doc(window.db, 'posts', postId), { commentCount: increment(1) });
+                    console.log('Comment count incremented');
+                    
+                    showMessage('Comment posted successfully!', 'success');
+                    newForm.reset();
+                    setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
+                    return;
+                }
+                
+                console.log('Using localStorage fallback');
+                // localStorage fallback
+                const post = posts.find(p => p.id === postId);
+                if (!post) {
+                    showMessage('Post not found.', 'error');
+                    return;
+                }
+                const newComment = {
+                    id: Date.now(),
+                    content,
+                    position: 'Anonymous Player',
+                    region: 'Community',
+                    timestamp: new Date().toISOString()
+                };
+                if (!post.comments) post.comments = [];
+                post.comments.push(newComment);
+                localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
+                showMessage('Comment posted successfully!', 'success');
+                newForm.reset();
+                setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
+            } catch (err) {
+                console.error('Comment submission error:', err);
+                console.error('Error details:', err.message, err.code);
+                showMessage('Failed to add comment: ' + err.message, 'error');
             }
-            const newComment = {
-                id: Date.now(),
-                content,
-                position: 'Anonymous Player',
-                region: 'Community',
-                timestamp: new Date().toISOString()
-            };
-            if (!post.comments) post.comments = [];
-            post.comments.push(newComment);
-            localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
-            showMessage('Comment posted successfully!', 'success');
-            newForm.reset();
-            setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
-        } catch (err) {
-            console.error('Comment submission error:', err);
-            console.error('Error details:', err.message, err.code);
-            showMessage('Failed to add comment: ' + err.message, 'error');
-        }
-    });
-    
-    console.log('Comment form setup complete');
-    
-    // Add a test button for debugging
-    const testButton = document.createElement('button');
-    testButton.textContent = 'Test Comment Form';
-    testButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000; background: red; color: white; padding: 10px;';
-    testButton.onclick = () => {
-        console.log('Test button clicked - checking comment form...');
-        const form = document.getElementById('commentForm');
-        console.log('Form found:', !!form);
-        if (form) {
-            console.log('Form HTML:', form.outerHTML);
-            const textarea = document.getElementById('commentContent');
-            console.log('Textarea found:', !!textarea);
-        }
-    };
-    document.body.appendChild(testButton);
+        });
+        
+        console.log('Comment form setup complete');
+        
+        // Add a test button for debugging
+        const testButton = document.createElement('button');
+        testButton.textContent = 'Test Comment Form';
+        testButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000; background: red; color: white; padding: 10px;';
+        testButton.onclick = () => {
+            console.log('Test button clicked - checking comment form...');
+            const form = document.getElementById('commentForm');
+            console.log('Form found:', !!form);
+            if (form) {
+                console.log('Form HTML:', form.outerHTML);
+                const textarea = document.getElementById('commentContent');
+                console.log('Textarea found:', !!textarea);
+            }
+        };
+        document.body.appendChild(testButton);
+        
+        // Add a direct Firebase test button
+        const firebaseTestButton = document.createElement('button');
+        firebaseTestButton.textContent = 'Test Firebase';
+        firebaseTestButton.style.cssText = 'position: fixed; top: 50px; right: 10px; z-index: 1000; background: blue; color: white; padding: 10px;';
+        firebaseTestButton.onclick = async () => {
+            console.log('Firebase test button clicked...');
+            console.log('Firestore available:', isFirestoreAvailable());
+            if (isFirestoreAvailable()) {
+                try {
+                    const { collection, addDoc, serverTimestamp } = getFs();
+                    const commentsCol = collection(window.db, 'posts', postId, 'comments');
+                    const testComment = {
+                        content: 'Test comment from button',
+                        position: 'Test Player',
+                        region: 'Test Region',
+                        timestamp: serverTimestamp()
+                    };
+                    console.log('Adding test comment...');
+                    const result = await addDoc(commentsCol, testComment);
+                    console.log('Test comment added successfully:', result.id);
+                    showMessage('Test comment added!', 'success');
+                } catch (err) {
+                    console.error('Firebase test failed:', err);
+                    showMessage('Firebase test failed: ' + err.message, 'error');
+                }
+            } else {
+                console.log('Firestore not available');
+                showMessage('Firestore not available', 'error');
+            }
+        };
+        document.body.appendChild(firebaseTestButton);
+    }, 500); // Wait 500ms for DOM to be ready
 }
 
 function toggleLike(postId) {
