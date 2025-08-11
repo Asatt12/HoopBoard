@@ -400,11 +400,16 @@ function setupCommentForm(postId, useFirestore) {
         }
         
         console.log('Firestore available:', isFirestoreAvailable());
+        console.log('useFirestore parameter:', useFirestore);
         try {
             if (isFirestoreAvailable() && useFirestore) {
                 console.log('Adding comment to Firestore for post:', postId);
                 const { collection, addDoc, serverTimestamp, doc, updateDoc, increment } = getFs();
+                console.log('Firestore functions loaded:', !!collection, !!addDoc, !!serverTimestamp);
+                
                 const commentsCol = collection(window.db, 'posts', postId, 'comments');
+                console.log('Comments collection reference:', commentsCol);
+                
                 const commentData = {
                     content,
                     position: 'Anonymous Player',
@@ -412,9 +417,12 @@ function setupCommentForm(postId, useFirestore) {
                     timestamp: serverTimestamp()
                 };
                 console.log('Comment data:', commentData);
+                
+                console.log('Attempting to add document...');
                 const commentRef = await addDoc(commentsCol, commentData);
                 console.log('Comment added with ID:', commentRef.id);
                 
+                console.log('Attempting to increment comment count...');
                 // increment comment count on post
                 await updateDoc(doc(window.db, 'posts', postId), { commentCount: increment(1) });
                 console.log('Comment count incremented');
@@ -447,7 +455,8 @@ function setupCommentForm(postId, useFirestore) {
             setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
         } catch (err) {
             console.error('Comment submission error:', err);
-            showMessage('Failed to add comment.', 'error');
+            console.error('Error details:', err.message, err.code);
+            showMessage('Failed to add comment: ' + err.message, 'error');
         }
     });
     
