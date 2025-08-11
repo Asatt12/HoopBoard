@@ -97,6 +97,26 @@ window.addEventListener('load', () => {
     }
 });
 
+// Also try showing popup immediately for iOS
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, checking for iOS specifically...');
+    
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
+    
+    console.log('Is iOS:', isIOS);
+    console.log('Is Safari:', isSafari);
+    
+    if (isIOS && isSafari && !installShown) {
+        console.log('iOS Safari detected, showing popup immediately...');
+        setTimeout(() => {
+            if (!installShown) {
+                showIOSInstallPopup();
+            }
+        }, 1000);
+    }
+});
+
 // Also try showing popup on DOMContentLoaded as backup
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM loaded, checking for mobile again...');
@@ -333,6 +353,8 @@ function showIOSInstallPopup() {
     if (installShown) return;
     installShown = true;
     
+    console.log('Creating iOS install popup...');
+    
     const popup = document.createElement('div');
     popup.className = 'install-popup ios';
     popup.innerHTML = `
@@ -341,18 +363,20 @@ function showIOSInstallPopup() {
                 <h3>📱 Install HoopBoard App</h3>
                 <button class="close-popup" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
             </div>
-            <p>To install HoopBoard on your iPhone:</p>
-            <ol style="text-align: left; margin: 15px 0;">
-                <li>Tap the <strong>Share</strong> button below</li>
+            <p><strong>To install HoopBoard on your iPhone:</strong></p>
+            <ol style="text-align: left; margin: 15px 0; line-height: 1.6;">
+                <li>Tap the <strong>Share</strong> button (square with arrow up)</li>
                 <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
                 <li>Tap <strong>"Add"</strong> to install</li>
             </ol>
             <div class="install-buttons">
-                <button class="install-btn primary" onclick="showIOSShare()">Show Share Button</button>
+                <button class="install-btn primary" onclick="showIOSShare()">Show Me How</button>
                 <button class="install-btn secondary" onclick="this.parentElement.parentElement.parentElement.remove()">Maybe Later</button>
             </div>
         </div>
     `;
+    
+
     
     // Apply same styles as above
     popup.style.cssText = `
