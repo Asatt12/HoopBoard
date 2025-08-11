@@ -292,7 +292,10 @@ function setupPostView() {
         });
         console.log('Setting up comment form with Firestore');
         // Add a small delay to ensure DOM is updated
-        setTimeout(() => setupCommentForm(postId, true), 100);
+        setTimeout(() => {
+            console.log('Timeout fired - setting up comment form...');
+            setupCommentForm(postId, true);
+        }, 200);
         return;
     }
 
@@ -308,15 +311,21 @@ function setupPostView() {
     displayPostView(post);
     console.log('Setting up comment form with localStorage');
     // Add a small delay to ensure DOM is updated
-    setTimeout(() => setupCommentForm(postId, false), 100);
+    setTimeout(() => {
+        console.log('Timeout fired - setting up comment form...');
+        setupCommentForm(postId, false);
+    }, 200);
 }
 
 function displayPostView(post) {
+    console.log('Displaying post view for post:', post);
     const postView = document.getElementById('postView');
+    console.log('Post view container found:', !!postView);
+    
     const timeIso = post.timestamp && post.timestamp.seconds ? new Date(post.timestamp.seconds * 1000).toISOString() : post.timestamp;
     const timeAgo = getTimeAgo(timeIso);
     
-    postView.innerHTML = `
+    const html = `
         <div class="post post-detail">
             <div class="post-header">
                 <span class="post-meta">${escapeHtml(post.position)} • ${escapeHtml(post.region)} • ${timeAgo}</span>
@@ -346,6 +355,17 @@ function displayPostView(post) {
             </div>
         </div>
     `;
+    
+    console.log('Setting post view HTML...');
+    postView.innerHTML = html;
+    console.log('Post view HTML set. Checking for comment form...');
+    
+    // Check if the form was actually created
+    const commentForm = document.getElementById('commentForm');
+    console.log('Comment form found after HTML set:', !!commentForm);
+    if (commentForm) {
+        console.log('Comment form details:', commentForm.tagName, commentForm.id);
+    }
 }
 
 function renderCommentsIntoDom(comments) {
