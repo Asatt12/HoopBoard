@@ -8,6 +8,20 @@ console.log('Firestore functions available:', typeof window !== 'undefined' && !
 // In-memory posts cache for rendering
 let posts = JSON.parse(localStorage.getItem('hoopboard_posts')) || [];
 
+// User identification system
+function getUserId() {
+    let userId = localStorage.getItem('hoopboard_user_id');
+    if (!userId) {
+        userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('hoopboard_user_id', userId);
+    }
+    return userId;
+}
+
+function isPostOwner(post) {
+    return post.userId === getUserId();
+}
+
 // Firestore detection helpers
 function isFirestoreAvailable() {
     const available = typeof window !== 'undefined' && !!window.db && !!window.firestoreFns;
@@ -97,7 +111,8 @@ function setupPostForm() {
                     division,
                     timestamp: serverTimestamp(),
                     likes: 0,
-                    commentCount: 0
+                    commentCount: 0,
+                    userId: getUserId()
                 });
                 showMessage('Post submitted successfully!', 'success');
                 form.reset();
@@ -118,7 +133,8 @@ function setupPostForm() {
                 timestamp: new Date().toISOString(),
                 likes: 0,
                 liked: false,
-                comments: []
+                comments: [],
+                userId: getUserId()
             };
             posts.unshift(newPost);
             localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
@@ -221,10 +237,13 @@ function createPostElement(post) {
         `;
     }
     
+    const deleteButton = isPostOwner(post) ? 
+        `<button class="delete-post-btn" onclick="deletePost('${post.id}')" title="Delete post">🗑️</button>` : '';
+    
     postDiv.innerHTML = `
         <div class="post-header">
             <span class="post-meta">${escapeHtml(post.position)} • ${escapeHtml(post.region)} • ${timeAgo}</span>
-            <button class="delete-post-btn" onclick="deletePost('${post.id}')" title="Delete post">🗑️</button>
+            ${deleteButton}
         </div>
         <div class="post-content">
             ${escapeHtml(post.content)}
@@ -325,11 +344,14 @@ function displayPostView(post) {
     const timeIso = post.timestamp && post.timestamp.seconds ? new Date(post.timestamp.seconds * 1000).toISOString() : post.timestamp;
     const timeAgo = getTimeAgo(timeIso);
     
+    const deleteButton = isPostOwner(post) ? 
+        `<button class="delete-post-btn" onclick="deletePost('${post.id}')" title="Delete post">🗑️</button>` : '';
+    
     const html = `
         <div class="post post-detail">
             <div class="post-header">
                 <span class="post-meta">${escapeHtml(post.position)} • ${escapeHtml(post.region)} • ${timeAgo}</span>
-                <button class="delete-post-btn" onclick="deletePost('${post.id}')" title="Delete post">🗑️</button>
+                ${deleteButton}
             </div>
             <div class="post-content">
                 ${escapeHtml(post.content)}
@@ -545,6 +567,19 @@ function toggleLike(postId) {
 }
 
 async function deletePost(postId) {
+    // Find the post to check ownership
+    const post = posts.find(p => p.id === postId);
+    if (!post) {
+        showMessage('Post not found.', 'error');
+        return;
+    }
+    
+    // Check if current user owns this post
+    if (!isPostOwner(post)) {
+        showMessage('You can only delete your own posts.', 'error');
+        return;
+    }
+    
     if (!confirm('Are you sure you want to delete this post? This action cannot be undone.')) return;
 
     try {
