@@ -37,7 +37,75 @@ function getFs() {
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupFooterScroll();
+    registerServiceWorker();
 });
+
+// Register service worker for PWA
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('Service Worker registered successfully:', registration);
+            })
+            .catch(error => {
+                console.log('Service Worker registration failed:', error);
+            });
+    }
+}
+
+// PWA Install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // Show install button after 5 seconds
+    setTimeout(() => {
+        showInstallPrompt();
+    }, 5000);
+});
+
+function showInstallPrompt() {
+    if (deferredPrompt) {
+        const installButton = document.createElement('button');
+        installButton.textContent = '📱 Install HoopBoard App';
+        installButton.className = 'install-prompt-btn';
+        installButton.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+            cursor: pointer;
+        `;
+        
+        installButton.addEventListener('click', () => {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
+                installButton.remove();
+            });
+        });
+        
+        document.body.appendChild(installButton);
+        
+        // Auto-hide after 10 seconds
+        setTimeout(() => {
+            if (installButton.parentNode) {
+                installButton.remove();
+            }
+        }, 10000);
+    }
+}
 
 function setupFooterScroll() {
     let lastScrollTop = 0;

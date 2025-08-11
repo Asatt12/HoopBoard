@@ -1,0 +1,27 @@
+{
+  "name": "HoopBoard",
+  "short_name": "HoopBoard",
+  "description": "Anonymous mental health support for athletes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111",
+  "theme_color": "#ff6b6b",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "Real Hoop Board logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "Real Hoop Board logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["health", "sports", "social"],
+  "lang": "en",
+  "scope": "/"
+} 
