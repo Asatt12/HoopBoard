@@ -65,77 +65,26 @@ window.addEventListener('beforeinstallprompt', (e) => {
     showInstallPopup();
 });
 
-// Show popup for all mobile users - More aggressive approach
+// Show welcome popup for all users
 window.addEventListener('load', () => {
-    console.log('Page loaded, checking for mobile...');
+    console.log('Page loaded, showing welcome popup...');
     
-    // Check if it's mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    console.log('Is mobile:', isMobile);
-    console.log('User agent:', navigator.userAgent);
-    
-    // Show popup for ALL mobile users, regardless of other conditions
-    if (isMobile) {
-        console.log('Mobile detected, will show popup in 2 seconds...');
-        setTimeout(() => {
-            console.log('Showing popup now...');
-            // Check if it's iOS Safari
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-            
-            console.log('Is iOS:', isIOS);
-            console.log('Is Safari:', isSafari);
-            
-            if (isIOS && isSafari) {
-                console.log('Showing iOS popup');
-                showIOSInstallPopup();
-            } else {
-                console.log('Showing general popup');
-                showGeneralInstallPopup();
-            }
-        }, 2000); // Reduced to 2 seconds
-    }
-});
-
-// Also try showing popup immediately for iOS
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, checking for iOS specifically...');
-    
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-    
-    console.log('Is iOS:', isIOS);
-    console.log('Is Safari:', isSafari);
-    
-    if (isIOS && isSafari && !installShown) {
-        console.log('iOS Safari detected, showing popup immediately...');
-        setTimeout(() => {
-            if (!installShown) {
-                showIOSInstallPopup();
-            }
-        }, 500); // Reduced to 500ms for faster popup
-    }
+    // Show welcome popup for everyone after 2 seconds
+    setTimeout(() => {
+        if (!installShown) {
+            showWelcomePopup();
+        }
+    }, 2000);
 });
 
 // Also try showing popup on DOMContentLoaded as backup
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM loaded, checking for mobile again...');
+    console.log('DOM loaded, showing welcome popup...');
     
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    if (isMobile && !installShown) {
-        console.log('Mobile detected on DOM load, will show popup in 3 seconds...');
+    if (!installShown) {
         setTimeout(() => {
             if (!installShown) {
-                console.log('Showing popup from DOM load...');
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-                
-                if (isIOS && isSafari) {
-                    showIOSInstallPopup();
-                } else {
-                    showGeneralInstallPopup();
-                }
+                showWelcomePopup();
             }
         }, 3000);
     }
@@ -551,23 +500,102 @@ function showInstallInstructions() {
 }
 
 // Manual test function - you can call this in browser console
+function showWelcomePopup() {
+    if (installShown) return;
+    installShown = true;
+    
+    console.log('Creating welcome popup...');
+    
+    const popup = document.createElement('div');
+    popup.className = 'welcome-popup';
+    popup.innerHTML = `
+        <div class="welcome-popup-content">
+            <div class="welcome-popup-header">
+                <h3>🏀 Welcome to HoopBoard</h3>
+                <button class="close-popup" onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+            </div>
+            <div style="text-align: center; padding: 20px 0;">
+                <p style="font-size: 18px; margin-bottom: 10px; color: #333;">
+                    Welcome to our BETA website, app soon.
+                </p>
+                <p style="font-size: 14px; color: #666; font-style: italic;">
+                    -A
+                </p>
+            </div>
+            <div class="welcome-buttons">
+                <button class="welcome-btn" onclick="this.parentElement.parentElement.parentElement.remove()">Got it!</button>
+            </div>
+        </div>
+    `;
+    
+    // Apply styles
+    popup.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        animation: fadeIn 0.3s ease;
+    `;
+    
+    const content = popup.querySelector('.welcome-popup-content');
+    content.style.cssText = `
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    `;
+    
+    const header = popup.querySelector('.welcome-popup-header');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    `;
+    
+    const closeBtn = popup.querySelector('.close-popup');
+    closeBtn.style.cssText = `
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+    `;
+    
+    const welcomeBtn = popup.querySelector('.welcome-btn');
+    welcomeBtn.style.cssText = `
+        background: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: 16px;
+    `;
+    
+    document.body.appendChild(popup);
+    
+    // Auto-hide after 10 seconds
+    setTimeout(() => {
+        if (popup.parentNode) {
+            popup.remove();
+        }
+    }, 10000);
+}
+
 function testPopup() {
     console.log('Manual popup test triggered');
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    console.log('Is mobile:', isMobile);
-    
-    if (isMobile) {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isSafari = /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
-        
-        if (isIOS && isSafari) {
-            showIOSInstallPopup();
-        } else {
-            showGeneralInstallPopup();
-        }
-    } else {
-        alert('Not on mobile device');
-    }
+    showWelcomePopup();
 }
 
 function showIOSShare() {
