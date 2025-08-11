@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HoopBoard - Locker Room</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>
+      <a href="Index.html" class="logo-link">
+        <img src="Real Hoop Board logo.png" alt="HoopBoard" class="logo-image">
+        <span class="beta-badge">Beta</span>
+      </a>
+    </h1>
+    <nav>
+      <ul>
+        <li><a href="Index.html">Home</a></li>
+        <li><a href="post.html">Share Story</a></li>
+        <li><a href="lockerroom.html">Locker Room</a></li>
+        <li><a href="about.html">About</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <div class="intro">
+      <h2>The Locker Room</h2>
+      <p>A scrollable timeline of real stories from hoopers like you.</p>
+    </div>
+
+    <div id="feed">
+      <!-- Example static posts (will be replaced with dynamic content) -->
+      <div class="post">
+        <div class="post-header">
+          <span class="post-meta">D1 Shooting Guard • Midwest • 2 hrs ago</span>
+        </div>
+        <div class="post-content">
+          I'm mentally drained. Nobody talks about what it's like after the final buzzer in college ball. Glad this space exists.
+        </div>
+        <div class="post-footer">
+          <div class="post-actions">
+            <button class="like-button">🤍 0 Likes</button>
+            <a href="view-post.html?id=1" class="comment-button">💬 0 Comments</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="post">
+        <div class="post-header">
+          <span class="post-meta">JUCO Point Guard • South • 5 hrs ago</span>
+        </div>
+        <div class="post-content">
+          We may not be D1, but we grind just as hard. Keep going y'all.
+        </div>
+        <div class="post-footer">
+          <div class="post-actions">
+            <button class="like-button">🤍 0 Likes</button>
+            <a href="view-post.html?id=2" class="comment-button">💬 0 Comments</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="post">
+        <div class="post-header">
+          <span class="post-meta">Former D2 Wing • East Coast • 1 day ago</span>
+        </div>
+        <div class="post-content">
+          Transitioning out of basketball was harder than I expected. This community helps me remember I'm not alone in that struggle.
+        </div>
+        <div class="post-footer">
+          <div class="post-actions">
+            <button class="like-button">🤍 0 Likes</button>
+            <a href="view-post.html?id=3" class="comment-button">💬 0 Comments</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic posts will be loaded here -->
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-verse">
+        <span class="verse-text">"In the same way, let your light shine before others."</span>
+        <span class="verse-reference">Matthew 5:16</span>
+      </div>
+      <div class="footer-copyright">
+        &copy; 2025 HoopBoard - A community for athletes, by athletes
+      </div>
+      <div class="social-links">
+        <a href="#" class="social-link instagram">📷</a>
+        <a href="#" class="social-link twitter">🐦</a>
+        <a href="#" class="social-link linkedin">💼</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

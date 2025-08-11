@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HoopBoard - Share Story</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>
+      <a href="Index.html" class="logo-link">
+        <img src="Real Hoop Board logo.png" alt="HoopBoard" class="logo-image">
+        <span class="beta-badge">Beta</span>
+      </a>
+    </h1>
+    <nav>
+      <ul>
+        <li><a href="Index.html">Home</a></li>
+        <li><a href="post.html">Share Story</a></li>
+        <li><a href="lockerroom.html">Locker Room</a></li>
+        <li><a href="about.html">About</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <div class="intro">
+      <h2>Share Your Story</h2>
+      <p>Your voice matters. Share your experiences, struggles, and triumphs with other athletes who understand.</p>
+    </div>
+
+    <div class="post-form-container">
+      <h3>What's on your mind?</h3>
+      <form id="postForm">
+        <textarea id="postContent" placeholder="Share your story, your struggles, your victories... What would you tell other athletes who might be going through the same thing?" rows="6" required></textarea>
+
+        <div class="form-row">
+          <select id="position" required>
+            <option value="" disabled selected>Position</option>
+            <option value="Point Guard">Point Guard</option>
+            <option value="Combo Guard">Combo Guard</option>
+            <option value="Shooting Guard">Shooting Guard</option>
+            <option value="Wing">Wing</option>
+            <option value="Small Forward">Small Forward</option>
+            <option value="Power Forward">Power Forward</option>
+            <option value="Center">Center</option>
+          </select>
+
+          <select id="region" required>
+            <option value="" disabled selected>Region</option>
+            <option value="Midwest">Midwest</option>
+            <option value="East Coast">East Coast</option>
+            <option value="New England">New England</option>
+            <option value="South">South</option>
+            <option value="West Coast">West Coast</option>
+            <option value="Central">Central</option>
+            <option value="Other">Other</option>
+          </select>
+
+          <select id="division" required>
+            <option value="" disabled selected>Division</option>
+            <option value="Division One">Division One</option>
+            <option value="Division Two">Division Two</option>
+            <option value="Division Three">Division Three</option>
+            <option value="JUCO">JUCO</option>
+            <option value="USCAA">USCAA</option>
+            <option value="NCCAA">NCCAA</option>
+            <option value="NAIA">NAIA</option>
+            <option value="High School Student">High School Student</option>
+            <option value="Former College Hooper">Former College Hooper</option>
+          </select>
+        </div>
+
+        <div class="form-note">
+          <p>💡 <strong>Remember:</strong> This is completely anonymous. No one will ever know it's you.</p>
+        </div>
+
+        <button type="submit" class="submit-btn">Share Your Story</button>
+      </form>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-verse">
+        <span class="verse-text">"In the same way, let your light shine before others."</span>
+        <span class="verse-reference">Matthew 5:16</span>
+      </div>
+      <div class="footer-copyright">
+        &copy; 2025 HoopBoard - A community for athletes, by athletes
+      </div>
+      <div class="social-links">
+        <a href="#" class="social-link instagram">📷</a>
+        <a href="#" class="social-link twitter">🐦</a>
+        <a href="#" class="social-link linkedin">💼</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html> 
