@@ -261,15 +261,22 @@ function setupPostView() {
             }
             const post = { id: snap.id, ...snap.data() };
             displayPostView(post);
-            // Listen to comments in real-time
-            const commentsCol = collection(window.db, 'posts', post.id, 'comments');
+            
+            // Listen to comments in real-time with error handling
+            const commentsCol = collection(window.db, 'posts', postId, 'comments');
             const q = query(commentsCol, orderBy('timestamp', 'asc'));
             onSnapshot(q, (snapshot) => {
+                console.log('Comments snapshot:', snapshot.docs.length, 'comments');
                 const comments = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                console.log('Comments data:', comments);
                 renderCommentsIntoDom(comments);
+            }, (error) => {
+                console.error('Comments listener error:', error);
+                // Show empty comments if there's an error
+                renderCommentsIntoDom([]);
             });
         }).catch(err => {
-            console.error(err);
+            console.error('Post loading error:', err);
             showMessage('Error loading post.', 'error');
         });
         setupCommentForm(postId, true);
@@ -368,16 +375,23 @@ function setupCommentForm(postId, useFirestore) {
         
         try {
             if (isFirestoreAvailable() && useFirestore) {
+                console.log('Adding comment to Firestore for post:', postId);
                 const { collection, addDoc, serverTimestamp, doc, updateDoc, increment } = getFs();
                 const commentsCol = collection(window.db, 'posts', postId, 'comments');
-                await addDoc(commentsCol, {
+                const commentData = {
                     content,
                     position: 'Anonymous Player',
                     region: 'Community',
                     timestamp: serverTimestamp()
-                });
+                };
+                console.log('Comment data:', commentData);
+                const commentRef = await addDoc(commentsCol, commentData);
+                console.log('Comment added with ID:', commentRef.id);
+                
                 // increment comment count on post
                 await updateDoc(doc(window.db, 'posts', postId), { commentCount: increment(1) });
+                console.log('Comment count incremented');
+                
                 showMessage('Comment posted successfully!', 'success');
                 commentForm.reset();
                 setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
