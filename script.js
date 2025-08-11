@@ -240,9 +240,11 @@ function createPostElement(post) {
 }
 
 function setupPostView() {
+    console.log('Setting up post view...');
     const urlParams = new URLSearchParams(window.location.search);
     const postIdParam = urlParams.get('id');
     const postId = isFirestoreAvailable() ? postIdParam : parseInt(postIdParam);
+    console.log('Post ID from URL:', postIdParam, 'Processed ID:', postId);
     
     if (!postId) {
         showMessage('Post not found.', 'error');
@@ -251,6 +253,7 @@ function setupPostView() {
     }
     
     if (isFirestoreAvailable()) {
+        console.log('Using Firestore for post view');
         const { doc, getDoc, collection, query, orderBy, onSnapshot } = getFs();
         const postRef = doc(window.db, 'posts', postId);
         getDoc(postRef).then(snap => {
@@ -260,6 +263,7 @@ function setupPostView() {
                 return;
             }
             const post = { id: snap.id, ...snap.data() };
+            console.log('Post loaded from Firestore:', post);
             displayPostView(post);
             
             // Listen to comments in real-time with error handling
@@ -279,10 +283,12 @@ function setupPostView() {
             console.error('Post loading error:', err);
             showMessage('Error loading post.', 'error');
         });
+        console.log('Setting up comment form with Firestore');
         setupCommentForm(postId, true);
         return;
     }
 
+    console.log('Using localStorage for post view');
     // localStorage fallback
     const post = posts.find(p => p.id === postId);
     if (!post) {
@@ -290,7 +296,9 @@ function setupPostView() {
         setTimeout(() => { window.location.href = 'lockerroom.html'; }, 2000);
         return;
     }
+    console.log('Post loaded from localStorage:', post);
     displayPostView(post);
+    console.log('Setting up comment form with localStorage');
     setupCommentForm(postId, false);
 }
 
@@ -358,12 +366,23 @@ function renderComments(comments) {
 }
 
 function setupCommentForm(postId, useFirestore) {
+    console.log('Setting up comment form for post:', postId, 'useFirestore:', useFirestore);
     const commentForm = document.getElementById('commentForm');
-    if (!commentForm) return;
+    console.log('Comment form found:', !!commentForm);
+    if (!commentForm) {
+        console.error('Comment form not found!');
+        return;
+    }
     
-    commentForm.addEventListener('submit', async function(e) {
+    // Remove any existing listeners to prevent duplicates
+    const newForm = commentForm.cloneNode(true);
+    commentForm.parentNode.replaceChild(newForm, commentForm);
+    
+    newForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        console.log('Comment form submitted!');
         const content = document.getElementById('commentContent').value.trim();
+        console.log('Comment content:', content);
         if (!content) {
             showMessage('Please enter a comment.', 'error');
             return;
@@ -373,6 +392,7 @@ function setupCommentForm(postId, useFirestore) {
             return;
         }
         
+        console.log('Firestore available:', isFirestoreAvailable());
         try {
             if (isFirestoreAvailable() && useFirestore) {
                 console.log('Adding comment to Firestore for post:', postId);
@@ -393,11 +413,12 @@ function setupCommentForm(postId, useFirestore) {
                 console.log('Comment count incremented');
                 
                 showMessage('Comment posted successfully!', 'success');
-                commentForm.reset();
+                newForm.reset();
                 setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
                 return;
             }
             
+            console.log('Using localStorage fallback');
             // localStorage fallback
             const post = posts.find(p => p.id === postId);
             if (!post) {
@@ -415,13 +436,15 @@ function setupCommentForm(postId, useFirestore) {
             post.comments.push(newComment);
             localStorage.setItem('hoopboard_posts', JSON.stringify(posts));
             showMessage('Comment posted successfully!', 'success');
-            commentForm.reset();
+            newForm.reset();
             setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
         } catch (err) {
-            console.error(err);
+            console.error('Comment submission error:', err);
             showMessage('Failed to add comment.', 'error');
         }
     });
+    
+    console.log('Comment form setup complete');
 }
 
 function toggleLike(postId) {
