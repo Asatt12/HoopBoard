@@ -1134,54 +1134,6 @@ function setupCommentForm(postId, useFirestore) {
         });
         
         console.log('Comment form setup complete');
-        
-        // Add a test button for debugging
-        const testButton = document.createElement('button');
-        testButton.textContent = 'Test Comment Form';
-        testButton.style.cssText = 'position: fixed; top: 10px; right: 10px; z-index: 1000; background: red; color: white; padding: 10px;';
-        testButton.onclick = () => {
-            console.log('Test button clicked - checking comment form...');
-            const form = document.getElementById('commentForm');
-            console.log('Form found:', !!form);
-            if (form) {
-                console.log('Form HTML:', form.outerHTML);
-                const textarea = document.getElementById('commentContent');
-                console.log('Textarea found:', !!textarea);
-            }
-        };
-        document.body.appendChild(testButton);
-        
-        // Add a direct Firebase test button
-        const firebaseTestButton = document.createElement('button');
-        firebaseTestButton.textContent = 'Test Firebase';
-        firebaseTestButton.style.cssText = 'position: fixed; top: 50px; right: 10px; z-index: 1000; background: blue; color: white; padding: 10px;';
-        firebaseTestButton.onclick = async () => {
-            console.log('Firebase test button clicked...');
-            console.log('Firestore available:', isFirestoreAvailable());
-            if (isFirestoreAvailable()) {
-                try {
-                    const { collection, addDoc, serverTimestamp } = getFs();
-                    const commentsCol = collection(window.db, 'posts', postId, 'comments');
-                    const testComment = {
-                        content: 'Test comment from button',
-                        position: 'Test Player',
-                        region: 'Test Region',
-                        timestamp: serverTimestamp()
-                    };
-                    console.log('Adding test comment...');
-                    const result = await addDoc(commentsCol, testComment);
-                    console.log('Test comment added successfully:', result.id);
-                    showMessage('Test comment added!', 'success');
-                } catch (err) {
-                    console.error('Firebase test failed:', err);
-                    showMessage('Firebase test failed: ' + err.message, 'error');
-                }
-            } else {
-                console.log('Firestore not available');
-                showMessage('Firestore not available', 'error');
-            }
-        };
-        document.body.appendChild(firebaseTestButton);
     }, 500); // Wait 500ms for DOM to be ready
 }
 
