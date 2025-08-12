@@ -1,13 +1,13 @@
-const CACHE_NAME = 'hoopboard-v1';
+const CACHE_NAME = 'hoopboard-v5';
 const urlsToCache = [
   '/',
-  '/Index.html',
-  '/lockerroom.html',
-  '/post.html',
-  '/about.html',
-  '/styles.css',
-  '/script.js',
-  '/firebase-init.js',
+  '/Index.html?v=5',
+  '/lockerroom.html?v=5',
+  '/post.html?v=5',
+  '/about.html?v=5',
+  '/styles.css?v=5',
+  '/script.js?v=5',
+  '/firebase-init.js?v=5',
   '/Real Hoop Board logo.png',
   '/favicon.svg'
 ];
@@ -28,8 +28,20 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
+        // Always try to fetch fresh content first, fallback to cache
+        return fetch(event.request)
+          .then(freshResponse => {
+            // Update cache with fresh content
+            const responseClone = freshResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+            return freshResponse;
+          })
+          .catch(() => {
+            // If network fails, use cached version
+            return response;
+          });
       })
   );
 });
