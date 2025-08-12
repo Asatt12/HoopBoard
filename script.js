@@ -753,11 +753,13 @@ function setupFeed() {
         const q = query(postsCol, orderBy('timestamp', 'desc'));
         onSnapshot(q, (snapshot) => {
             posts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+            console.log('Firestore posts loaded:', posts.map(p => ({ id: p.id, type: typeof p.id })));
             displayPosts();
         }, (error) => {
             console.error('Feed error:', error);
             // Fallback to localStorage if snapshot fails
             posts = JSON.parse(localStorage.getItem('hoopboard_posts')) || [];
+            console.log('localStorage posts loaded:', posts.map(p => ({ id: p.id, type: typeof p.id })));
             displayPosts();
         });
         return;
@@ -1170,8 +1172,11 @@ function toggleLike(postId) {
 }
 
 async function deletePost(postId) {
-    // Find the post to check ownership
-    const post = posts.find(p => p.id === postId);
+    console.log('Attempting to delete post:', postId);
+    console.log('Available posts:', posts.map(p => ({ id: p.id, type: typeof p.id })));
+    
+    // Find the post to check ownership - handle both string and number IDs
+    const post = posts.find(p => p.id == postId || p.id === postId);
     if (!post) {
         showMessage('Post not found.', 'error');
         return;
@@ -1201,7 +1206,7 @@ async function deletePost(postId) {
         }
 
         // localStorage fallback
-        const idx = posts.findIndex(p => p.id === postId);
+        const idx = posts.findIndex(p => p.id == postId || p.id === postId);
         if (idx === -1) {
             showMessage('Post not found.', 'error');
             return;
