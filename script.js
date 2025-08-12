@@ -501,6 +501,8 @@ function showInstallInstructions() {
 
 // Manual test function - you can call this in browser console
 function showWelcomePopup() {
+    // Clear old popup state to show new message
+    localStorage.removeItem('hoopboard_welcome_shown');
     if (installShown) return;
     installShown = true;
     localStorage.setItem('hoopboard_welcome_shown', 'true');
@@ -517,10 +519,10 @@ function showWelcomePopup() {
             </div>
             <div style="text-align: center; padding: 20px 0;">
                 <p style="font-size: 18px; margin-bottom: 10px; color: #333;">
-                    Welcome to our BETA website, app soon.
+                    Welcome to our BETA website! The app is coming soon.
                 </p>
                 <p style="font-size: 14px; color: #666; font-style: italic;">
-                    -A
+                    Thanks - Aiden Satterfield
                 </p>
             </div>
             <div class="welcome-buttons">
