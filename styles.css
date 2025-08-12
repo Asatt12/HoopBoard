@@ -1036,13 +1036,13 @@ footer {
     width: 100%;
     bottom: 0;
     font-size: 11px;
-    transform: translateY(100%);
+    transform: translateY(0);
     transition: transform 0.3s ease-in-out;
     z-index: 1000;
 }
 
-footer.show {
-    transform: translateY(0);
+footer.hide {
+    transform: translateY(100%);
 }
 
 .footer-content {

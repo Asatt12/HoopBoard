@@ -638,9 +638,9 @@ function setupFooterScroll() {
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
         
         if (scrollTop > lastScrollTop && scrollTop > 100) {
-            footer.classList.add('show');
+            footer.classList.remove('hide');
         } else if (scrollTop < lastScrollTop || scrollTop <= 100) {
-            footer.classList.remove('show');
+            footer.classList.add('hide');
         }
         
         lastScrollTop = scrollTop;
