@@ -1174,10 +1174,41 @@ function toggleLike(postId) {
 async function deletePost(postId) {
     console.log('Attempting to delete post:', postId);
     console.log('Available posts:', posts.map(p => ({ id: p.id, type: typeof p.id })));
+    console.log('Posts array length:', posts.length);
+    console.log('User agent:', navigator.userAgent);
     
-    // Find the post to check ownership - handle both string and number IDs
-    const post = posts.find(p => p.id == postId || p.id === postId);
+    let post = null;
+    
+    // First try to find post in current posts array
+    if (posts && posts.length > 0) {
+        post = posts.find(p => p.id == postId || p.id === postId);
+    }
+    
+    // If not found in posts array, try to get it directly from Firestore or localStorage
     if (!post) {
+        console.log('Post not found in posts array, trying to get it directly...');
+        if (isFirestoreAvailable()) {
+            try {
+                const { doc, getDoc } = getFs();
+                const postRef = doc(window.db, 'posts', postId);
+                const snap = await getDoc(postRef);
+                if (snap.exists()) {
+                    post = { id: snap.id, ...snap.data() };
+                    console.log('Found post directly from Firestore:', post);
+                }
+            } catch (err) {
+                console.error('Error getting post from Firestore:', err);
+            }
+        } else {
+            // Try localStorage
+            const allPosts = JSON.parse(localStorage.getItem('hoopboard_posts')) || [];
+            post = allPosts.find(p => p.id == postId || p.id === postId);
+            console.log('Found post from localStorage:', post);
+        }
+    }
+    
+    if (!post) {
+        console.log('Post not found anywhere. Available IDs:', posts.map(p => p.id));
         showMessage('Post not found.', 'error');
         return;
     }
@@ -1224,6 +1255,9 @@ async function deletePost(postId) {
         showMessage('Failed to delete post.', 'error');
     }
 }
+
+// Make deletePost globally accessible for mobile
+window.deletePost = deletePost;
 
 function setupLikeButtons() {
     // No-op: likes handled per button handlers and real-time updates
