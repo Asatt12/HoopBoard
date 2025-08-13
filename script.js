@@ -8,6 +8,10 @@ console.log('Firestore functions available:', typeof window !== 'undefined' && !
 // In-memory posts cache for rendering
 let posts = JSON.parse(localStorage.getItem('hoopboard_posts')) || [];
 
+// Notification system
+let notifications = JSON.parse(localStorage.getItem('hoopboard_notifications')) || [];
+let notificationListeners = [];
+
 // User identification system
 function getUserId() {
     let userId = localStorage.getItem('hoopboard_user_id');
@@ -33,11 +37,192 @@ function getFs() {
     return window.firestoreFns;
 }
 
+// Notification system functions
+function addNotification(type, postId, postContent, action) {
+    const notification = {
+        id: Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+        type: type, // 'like' or 'comment'
+        postId: postId,
+        postContent: postContent.substring(0, 50) + (postContent.length > 50 ? '...' : ''),
+        action: action,
+        timestamp: new Date().toISOString(),
+        read: false
+    };
+    
+    notifications.unshift(notification);
+    localStorage.setItem('hoopboard_notifications', JSON.stringify(notifications));
+    
+    // Show notification toast
+    showNotificationToast(notification);
+    
+    // Update notification badge
+    updateNotificationBadge();
+}
+
+function showNotificationToast(notification) {
+    const icon = notification.type === 'like' ? '❤️' : '💬';
+    const message = notification.type === 'like' ? 
+        `Someone liked your post: "${notification.postContent}"` :
+        `Someone commented on your post: "${notification.postContent}"`;
+    
+    showMessage(message, 'notification');
+}
+
+function updateNotificationBadge() {
+    const unreadCount = notifications.filter(n => !n.read).length;
+    let badge = document.getElementById('notification-badge');
+    
+    if (!badge && unreadCount > 0) {
+        // Create notification badge in header
+        const header = document.querySelector('header');
+        if (header) {
+            const nav = header.querySelector('nav ul');
+            if (nav) {
+                const badge = document.createElement('div');
+                badge.id = 'notification-badge';
+                badge.className = 'notification-badge';
+                badge.textContent = unreadCount;
+                badge.style.cssText = `
+                    position: absolute;
+                    top: -5px;
+                    right: -5px;
+                    background: #ff4444;
+                    color: white;
+                    border-radius: 50%;
+                    width: 20px;
+                    height: 20px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                    font-weight: bold;
+                    z-index: 1000;
+                `;
+                
+                const navItem = document.createElement('li');
+                navItem.style.position = 'relative';
+                const link = document.createElement('a');
+                link.href = '#';
+                link.textContent = '🔔';
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    showNotificationsPanel();
+                };
+                navItem.appendChild(link);
+                navItem.appendChild(badge);
+                nav.appendChild(navItem);
+            }
+        }
+    } else if (badge) {
+        if (unreadCount > 0) {
+            badge.textContent = unreadCount;
+            badge.style.display = 'flex';
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+}
+
+function showNotificationsPanel() {
+    const panel = document.createElement('div');
+    panel.className = 'notifications-panel';
+    panel.innerHTML = `
+        <div class="notifications-content">
+            <div class="notifications-header">
+                <h3>Notifications</h3>
+                <button onclick="this.parentElement.parentElement.parentElement.remove()">×</button>
+            </div>
+            <div class="notifications-list">
+                ${notifications.length === 0 ? '<p>No notifications yet</p>' : 
+                  notifications.map(n => `
+                    <div class="notification-item ${n.read ? 'read' : 'unread'}" onclick="markNotificationRead('${n.id}')">
+                        <div class="notification-icon">${n.type === 'like' ? '❤️' : '💬'}</div>
+                        <div class="notification-content">
+                            <div class="notification-text">${n.type === 'like' ? 'Someone liked' : 'Someone commented on'} your post</div>
+                            <div class="notification-post">"${n.postContent}"</div>
+                            <div class="notification-time">${getTimeAgo(n.timestamp)}</div>
+                        </div>
+                    </div>
+                  `).join('')}
+            </div>
+        </div>
+    `;
+    
+    panel.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+    
+    const content = panel.querySelector('.notifications-content');
+    content.style.cssText = `
+        background: white;
+        border-radius: 15px;
+        max-width: 400px;
+        width: 90%;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    `;
+    
+    const header = panel.querySelector('.notifications-header');
+    header.style.cssText = `
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px;
+        border-bottom: 1px solid #eee;
+    `;
+    
+    const closeBtn = panel.querySelector('.notifications-header button');
+    closeBtn.style.cssText = `
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: #666;
+    `;
+    
+    const list = panel.querySelector('.notifications-list');
+    list.style.cssText = `
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    `;
+    
+    document.body.appendChild(panel);
+}
+
+function markNotificationRead(notificationId) {
+    const notification = notifications.find(n => n.id === notificationId);
+    if (notification) {
+        notification.read = true;
+        localStorage.setItem('hoopboard_notifications', JSON.stringify(notifications));
+        updateNotificationBadge();
+        
+        // Refresh the notifications panel
+        const panel = document.querySelector('.notifications-panel');
+        if (panel) {
+            panel.remove();
+            showNotificationsPanel();
+        }
+    }
+}
+
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
     setupFooterScroll();
     registerServiceWorker();
+    updateNotificationBadge(); // Initialize notification badge
 });
 
 // Register service worker for PWA
@@ -1102,6 +1287,19 @@ function setupCommentForm(postId, useFirestore) {
                     await updateDoc(doc(window.db, 'posts', postId), { commentCount: increment(1) });
                     console.log('Comment count incremented');
                     
+                    // Send notification to post owner
+                    try {
+                        const postSnap = await getDoc(doc(window.db, 'posts', postId));
+                        if (postSnap.exists()) {
+                            const post = postSnap.data();
+                            if (post.userId !== getUserId()) { // Don't notify yourself
+                                addNotification('comment', postId, post.content, 'commented');
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error sending comment notification:', err);
+                    }
+                    
                     showMessage('Comment posted successfully!', 'success');
                     newForm.reset();
                     setTimeout(() => { window.location.href = 'lockerroom.html'; }, 1200);
@@ -1145,10 +1343,27 @@ function toggleLike(postId) {
         const likedKey = 'hoopboard_liked_posts';
         const likedSet = new Set(JSON.parse(localStorage.getItem(likedKey)) || []);
         const isLiked = likedSet.has(postId);
-        const { doc, updateDoc, increment } = getFs();
+        const { doc, updateDoc, increment, getDoc } = getFs();
+        
         updateDoc(doc(window.db, 'posts', postId), { likes: increment(isLiked ? -1 : 1) })
-            .then(() => {
-                if (isLiked) likedSet.delete(postId); else likedSet.add(postId);
+            .then(async () => {
+                if (isLiked) {
+                    likedSet.delete(postId);
+                } else {
+                    likedSet.add(postId);
+                    // Send notification to post owner
+                    try {
+                        const postSnap = await getDoc(doc(window.db, 'posts', postId));
+                        if (postSnap.exists()) {
+                            const post = postSnap.data();
+                            if (post.userId !== getUserId()) { // Don't notify yourself
+                                addNotification('like', postId, post.content, 'liked');
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error sending like notification:', err);
+                    }
+                }
                 localStorage.setItem(likedKey, JSON.stringify(Array.from(likedSet)));
             })
             .catch(err => console.error('Like failed', err));
@@ -1256,8 +1471,10 @@ async function deletePost(postId) {
     }
 }
 
-// Make deletePost globally accessible for mobile
+// Make functions globally accessible for mobile
 window.deletePost = deletePost;
+window.showNotificationsPanel = showNotificationsPanel;
+window.markNotificationRead = markNotificationRead;
 
 function setupLikeButtons() {
     // No-op: likes handled per button handlers and real-time updates
@@ -1269,13 +1486,18 @@ function showMessage(message, type) {
     const toast = document.createElement('div');
     toast.className = `toast ${type}`;
     toast.textContent = message;
+    
+    let background = '#111';
+    if (type === 'error') background = '#ff4d4f';
+    if (type === 'notification') background = '#4CAF50';
+    
     Object.assign(toast.style, {
         position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-        background: type === 'error' ? '#ff4d4f' : '#111', color: '#fff', padding: '10px 14px',
+        background: background, color: '#fff', padding: '10px 14px',
         borderRadius: '8px', zIndex: 2000, boxShadow: '0 6px 20px rgba(0,0,0,0.2)'
     });
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 1800);
+    setTimeout(() => toast.remove(), type === 'notification' ? 4000 : 1800);
 }
 
 function escapeHtml(unsafe) {
